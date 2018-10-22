@@ -4,7 +4,7 @@
 ## Vim Configuration
 将vimconf文件改为.vimrc，然后移动到home里面
 ```shell
-mv vimconf ~/.vimrc
+mv vimrc ~/.vimrc
 ```
 如果需要使用vim的各种插件，需要安装vundle
 如果不需要，请将.vimrc中的插件配置部分注释掉
@@ -13,7 +13,7 @@ mv vimconf ~/.vimrc
 ```shell
 git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 ```
-启动vim并且在vim下运行 ** :PlugInstall **
+启动vim并且在vim下运行 **:PlugInstall**
 
 ## Oh-my-zsh Configuration
 首先需要安装zsh以及一些依赖
@@ -36,3 +36,14 @@ zsh
 sudo chsh $USER -s /usr/bin/zsh
 ```
 这样就完成了zsh的配置
+
+## Tmux Configuration
+首先需要安装tmux
+```shell
+sudo apt-get install tmux
+```
+之后将tmux.conf文件移动到home文件夹之下并重命名为.tmux.conf
+```shell
+mv tmux.conf ~/.tmux.conf
+```
+配置完成
