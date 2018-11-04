@@ -27,7 +27,8 @@ Plugin 'tomtom/tlib_vim'
 "-----------------
 " Fast navigation
 "-----------------
-Plugin 'edsono/vim-matchit'
+"Plugin 'edsono/vim-matchit'
+Plugin 'geoffharcourt/vim-matchit'
 Plugin 'Lokaltog/vim-easymotion'
 
 "--------------
