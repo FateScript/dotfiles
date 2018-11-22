@@ -13,7 +13,8 @@ Plugin 'gmarik/Vundle.vim'
 "------------------
 " Code Completions
 "------------------
-Plugin 'Shougo/neocomplcache'
+Plugin 'Valloric/YouCompleteMe'
+"Plugin 'Shougo/neocomplcache'
 Plugin 'mattn/emmet-vim'
 Plugin 'Raimondi/delimitMate'
 Plugin 'ervandew/supertab'
@@ -271,6 +272,20 @@ let g:user_emmet_expandabbr_key='<C-j>'
 
 " powerline
 "let g:Powerline_symbols = 'fancy'
+
+" YouCompleteMe
+let g:ycm_collect_identifiers_from_comments_and_strings = 0
+let g:ycm_min_num_of_chars_for_completion=0
+let g:ycm_cache_omnifunc=0
+let g:ycm_seed_identifiers_with_syntax=1
+let g:ycm_complete_in_comments = 1
+let g:ycm_complete_in_strings = 1
+let g:ycm_autoclose_preview_window_after_completion = 1
+let g:ycm_autoclose_preview_window_after_insertion = 1
+let g:ycm_python_binary_path = 'python'
+map <C-G>  :YcmCompleter GoToDefinitionElseDeclaration<CR>
+let g:ycm_global_ycm_extra_conf = '~/.vim/plugged/YouCompleteMe/third_party/ycmd/cpp/ycm/.ycm_extra_conf.py'
+set complete-=i
 
 " NeoComplCache
 let g:neocomplcache_enable_at_startup=1
