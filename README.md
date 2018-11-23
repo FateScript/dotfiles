@@ -16,6 +16,9 @@ git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 启动vim并且在vim下运行 **:PlugInstall**
 如果安装的插件比较多的话，需要等待的时间也相对比较长一些
 
+## Install Vim Plugin
+
+####You Complete Me
 为了使用YouCompleteMe(YCM)需要我们手动编译一下插件
 首先进入YCM的文件夹执行install.py(不支持C语法)
 ```shell
@@ -31,6 +34,11 @@ sudo apt install build-essential cmake python3-dev
 cd ~/.vim/bundle/YouCompleteMe
 python3 install.py --clang-completer
 ```
+对于想要支持C/C++语言的人来说，需要将ycm_extra_conf.py文件加入到ycm的文件夹下面
+```shell
+mv ycm_extra_conf.py  ~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp/ycm/.ycm_extra_conf.py
+```
+之后就可以使用YCM进行C/C++的代码补全了
 
 ## Oh-my-zsh Configuration
 首先需要安装zsh以及一些依赖
