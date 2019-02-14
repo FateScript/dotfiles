@@ -1,5 +1,4 @@
 #### vim config
-
 mv vimrc ~/.vimrc
 git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 vim +PluginInstall +qall
@@ -16,9 +15,10 @@ mv ycm_extra_conf.py  ~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp/ycm/.ycm_
 sudo apt update
 sudo apt install -y zsh python-pygments autojump
 cd ~
-tar xvf ~/Downloads/zsh.tar.gz
+tar xvf ~/MyConf/zsh.tar.gz
 sudo chsh $USER -s /usr/bin/zsh
 
 #### tmux config
 sudo apt-get install tmux
-mv tmux.conf ~/.tmux.conf
+mv MyConf/tmux.conf ~/.tmux.conf
+echo "Done!"

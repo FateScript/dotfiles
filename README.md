@@ -1,6 +1,12 @@
 # MyConf
 日常使用Ubuntu的一些配置文件，git clone之后解压使用
-
+## Use script to config
+运行autoConfig.sh即可一键配置
+```shell
+chmod +x autoConfig.sh
+./autoConfig.sh
+```
+如果需要个性化配置请阅读如下部分
 ## Vim Configuration
 将vimconf文件改为.vimrc，然后移动到home里面
 ```shell
@@ -50,7 +56,7 @@ sudo apt install -y zsh python-pygments autojump
 
 ```shell
 cd ~
-tar xvf ~/Downloads/zsh.tar.gz
+tar xvf ~/MyConfig/zsh.tar.gz
 ```
 运行zsh
 ```shell
