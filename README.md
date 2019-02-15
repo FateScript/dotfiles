@@ -1,7 +1,7 @@
 # MyConf
 日常使用Ubuntu的一些配置文件，git clone之后解压使用
 ## Use script to config
-运行autoConfig.sh即可一键配置
+运行autoConfig.sh即可一键配置，推荐vm或者实体机器使用，如果是workspace下推荐自由配置
 ```shell
 chmod +x autoConfig.sh
 ./autoConfig.sh
@@ -11,6 +11,10 @@ chmod +x autoConfig.sh
 将vimconf文件改为.vimrc，然后移动到home里面
 ```shell
 mv vimrc ~/.vimrc
+```
+如果想要配置的比较简单，可以使用light_vimrc
+```shell
+mv light_vimrc ~/.vimrc
 ```
 如果需要使用vim的各种插件，需要安装vundle
 如果不需要，请将.vimrc中的插件配置部分注释掉
@@ -31,6 +35,12 @@ git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 cd ~/.vim/bundle/YouCompleteMe
 python3 install.py
 ```
+这一步如果出现问题，可能需要在执行如下命令
+```shell
+cd ~/.vim/bundle/YouCompleteMe
+git submodule update --init --recursive
+```
+
 如果需要支持C语法则需要执行(Ubuntu平台)
 ```shell
 sudo apt install build-essential cmake python3-dev
@@ -45,6 +55,16 @@ python3 install.py --clang-completer
 mv ycm_extra_conf.py  ~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp/ycm/.ycm_extra_conf.py
 ```
 之后就可以使用YCM进行C/C++的代码补全了
+
+**如果使用python后发现没有补全效果，则需要对.vimrc文件进行如下修改：**
+将
+```vim
+let g:ycm_python_binary_path = 'python'
+```
+改成自己的配置，比如
+```vim
+let g:ycm_python_binary_path = '/usr/bin/python3'
+```
 
 ## Oh-my-zsh Configuration
 首先需要安装zsh以及一些依赖
