@@ -13,14 +13,17 @@ call vundle#begin()
 "-------------------
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'Valloric/YouCompleteMe'
+Plugin 'scrooloose/syntastic'
 Plugin 'scrooloose/nerdtree'
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
 filetype plugin indent on    " required
 
 "--------------
-"VIM Config
+"VIM UI Config
 "--------------
+
+let mapleader = "\<Space>"
 
 "highlight current line
 au WinLeave * set nocursorline nocursorcolumn
@@ -49,6 +52,8 @@ set expandtab
 "-----------------
 
 "Nerd Tree
+nmap <F4> :NERDTreeToggle<cr>
+
 let NERDChristmasTree=0
 let NERDTreeWinSize=30
 let NERDTreeChDirMode=2
@@ -66,10 +71,71 @@ let g:ycm_complete_in_comments = 1
 let g:ycm_complete_in_strings = 1
 let g:ycm_autoclose_preview_window_after_completion = 1
 let g:ycm_autoclose_preview_window_after_insertion = 1
-let g:ycm_python_binary_path = 'python'
+let g:ycm_python_binary_path = '/usr/bin/python3'
 map <C-G>  :YcmCompleter GoToDefinitionElseDeclaration<CR>
 let g:ycm_global_ycm_extra_conf = '~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp/ycm/.ycm_extra_conf.py'
 set complete-=i
 
-nmap <F6> :NERDTreeToggle<cr>
+"Syntastics
+let g:syntastic_error_symbol='>>'
+let g:syntastic_warning_symbol='>'
+let g:syntastic_check_on_open=1
+let g:syntastic_check_on_wq=1
+let g:syntastic_enable_highlighting=0
+let g:syntastic_python_checkers=['flake8']
+"highlight SyntasticErrorSign guifg=white guibg=black
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 0
+let g:syntastic_loc_list_height = 5
+
+function! ToggleErrors()
+    let old_last_winnr = winnr('$')
+    lclose
+    if old_last_winnr == winnr('$')
+        " Nothing was closed, open syntastic error location panel
+        Errors
+    endif
+endfunction
+
+nnoremap <leader>s  :call ToggleErrors()<cr>
+nnoremap <leader>sn :lnext<cr>
+nnoremap <leader>sp :lprevious<cr>
+
+"-----------------
+"Useful Function
+"-----------------
+
+"Easier navigation between split windows
+map <C-j> <C-W>j
+map <C-k> <C-W>k
+map <C-h> <C-W>h
+map <C-l> <C-W>l
+
+"Python File Head
+function HeaderPython()
+    call setline(1, "#!/usr/bin/python3")
+    call append(1, "# -*- coding:utf-8 -*-")
+    "call append(2, "# author:Wang Feng" . strftime('%Y-%m-%d %T', localtime()))
+    normal G
+    normal o
+    normal o
+endfunction
+autocmd bufnewfile *.py call HeaderPython()
+
+"Auto Compile and Run
+map <F5> :call CompileRunGcc()<CR>
+functio! CompileRunGcc()
+    exec "w"
+    if &filetype == 'c'
+        exec '!g++ % -o %<'
+        exec '!./%<'
+    elseif &filetype == 'cpp'
+        exec '!g++ % -o %<'
+        exec '!./%<'
+    elseif &filetype == 'python'
+        exec '!python3 %'
+    elseif &filetype == 'sh'
+        :!bash %
+    endif
+endfunction
 
