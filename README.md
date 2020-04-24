@@ -23,7 +23,7 @@ mv light_vimrc ~/.vimrc
 ```shell
 git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 ```
-启动vim并且在vim下运行 **:PlugInstall**
+启动vim并且在vim下运行 **:PluginInstall**
 如果安装的插件比较多的话，需要等待的时间也相对比较长一些
 
 ## Install Vim Plugin

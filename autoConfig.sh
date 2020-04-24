@@ -16,11 +16,12 @@ pip3 install --user flake8
 ### zsh config
 sudo apt update
 sudo apt install -y zsh python-pygments autojump
-cd ~
-tar xvf ~/MyConf/zsh.tar.gz
+cp zshrc ~/.zshrc
+cp -r zsh ~/.zsh
 sudo chsh $USER -s /usr/bin/zsh
 
 #### tmux config
 sudo apt-get install tmux
 cp MyConf/tmux.conf ~/.tmux.conf
+
 echo "Done!"
