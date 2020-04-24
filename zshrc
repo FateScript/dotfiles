@@ -36,6 +36,7 @@ alias rf='readlink -f'
 
 alias a3='source ~/anaconda3/bin/activate'
 alias c3='~/anaconda3/bin/conda'
+alias findname='find . -name'
 
 # tar aliases
 alias tarinfo="tar -tf"
@@ -45,7 +46,8 @@ alias tarunzip="tar -zxvf"
 # git aliases
 alias gs='git status'
 alias ga='git add'
-alias gm='git commit'
+alias gm='git commit -m'
+alias gd='git diff'
 alias gf='git fetch'
 alias gdown='git reset HEAD'
 alias gremove='git checkout --'

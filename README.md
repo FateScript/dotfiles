@@ -75,8 +75,8 @@ sudo apt install -y zsh python-pygments autojump
 之后在home目录解压zsh.tar.gz
 
 ```shell
-cd ~
-tar xvf ~/MyConfig/zsh.tar.gz
+cp -r zsh ~/.zsh
+cp zshrc ~/.zshrc
 ```
 运行zsh
 ```shell
