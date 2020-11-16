@@ -61,6 +61,7 @@ let NERDTreeIgnore=['\~$', '\.pyc$', '\.swp$']
 " let NERDTreeSortOrder=['^__\.py$', '\/$', '*', '\.swp$',  '\~$']
 let NERDTreeShowBookmarks=1
 let NERDTreeWinPos = "right"
+let g:NERDTreeNodeDelimiter = "\u00a0"
 
 "YouCompleteMe
 let g:ycm_collect_identifiers_from_comments_and_strings = 0

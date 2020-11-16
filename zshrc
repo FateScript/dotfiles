@@ -48,9 +48,10 @@ alias gs='git status'
 alias ga='git add'
 alias gm='git commit -m'
 alias gd='git diff'
-alias gf='git fetch'
 alias gdown='git reset HEAD'
 alias gremove='git checkout --'
+alias grm='git rm'
+
 
 if [ $OS_DISTRIBUTION = 'arch' ]; then
 	alias yS='yaourt -S --noconfirm --needed'
