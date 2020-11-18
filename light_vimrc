@@ -23,6 +23,9 @@ filetype plugin indent on    " required
 "VIM UI Config
 "--------------
 
+" enable syntax hightlight and completion
+syntax on
+
 let mapleader = "\<Space>"
 
 "highlight current line
@@ -46,6 +49,8 @@ set smartindent
 set shiftwidth=4
 set tabstop=4
 set expandtab
+
+set backspace=indent,eol,start  " used for system like macOS
 
 "-----------------
 "Plugin Config
