@@ -104,3 +104,9 @@ fi
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 
 [ -f ~/.zsh_additional ] && source ~/.zsh_additional
+
+# Activate virtual env and save the path as a tmux variable,
+# so that new panes/windows can re-activate as necessary
+if [ -n "$VIRTUAL_ENV" ]; then
+    source $VIRTUAL_ENV/bin/activate;
+fi
