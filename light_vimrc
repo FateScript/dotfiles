@@ -1,29 +1,47 @@
 set nocompatible              " be iMproved, required
 filetype off                  " required
 
+if empty(glob('~/.vim/autoload/plug.vim'))
+  silent !curl -fLo ~/.vim/autoload/plug.vim --create-dirs
+    \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+endif
+
 " set the runtime path to include Vundle and initialize
-set rtp+=~/.vim/bundle/Vundle.vim
-call vundle#begin()
-" alternatively, pass a path where Vundle should install plugins
-"call vundle#begin('~/some/path/here')
-" let Vundle manage Vundle, required
+" Specify a directory for plugins
+" - For Neovim: stdpath('data') . '/plugged'
+" - Avoid using standard Vim directory names like 'plugin'
+call plug#begin('~/.vim/plugged')
+
+" Make sure you use single quotes
 
 "-------------------
 "Plugin Insatll
 "-------------------
-Plugin 'VundleVim/Vundle.vim'
-Plugin 'Valloric/YouCompleteMe'
-Plugin 'scrooloose/syntastic'
-Plugin 'scrooloose/nerdtree'
-" All of your Plugins must be added before the following line
-call vundle#end()            " required
+" lsp
+Plug 'prabirshrestha/vim-lsp'
+Plug 'mattn/vim-lsp-settings'
+
+" auto complete
+Plug 'prabirshrestha/asyncomplete.vim'
+Plug 'prabirshrestha/asyncomplete-lsp.vim'
+Plug 'davidhalter/jedi-vim'
+
+" others
+Plug 'jiangmiao/auto-pairs'
+Plug 'scrooloose/syntastic'
+Plug 'scrooloose/nerdtree'
+Plug 'tpope/vim-commentary'
+
+" theme
+Plug 'morhetz/gruvbox'
+
+call plug#end()
 filetype plugin indent on    " required
 
 "--------------
 "VIM UI Config
 "--------------
-
-" enable syntax hightlight and completion
 syntax on
 
 let mapleader = "\<Space>"
@@ -39,6 +57,7 @@ set number
 set showmatch
 set showcmd                " show typed command in status bar
 set title                  " show file in titlebar
+set ruler                  "Always show current position
 set laststatus=2           " use 2 lines for the status bar
 set matchtime=2            " show matching bracket for 0.2 seconds
 set matchpairs+=<:>        " specially for html
@@ -49,8 +68,11 @@ set smartindent
 set shiftwidth=4
 set tabstop=4
 set expandtab
+set backspace=indent,eol,start
 
-set backspace=indent,eol,start  " used for system like macOS
+" theme
+colorscheme gruvbox
+set background=dark
 
 "-----------------
 "Plugin Config
@@ -67,21 +89,6 @@ let NERDTreeIgnore=['\~$', '\.pyc$', '\.swp$']
 let NERDTreeShowBookmarks=1
 let NERDTreeWinPos = "right"
 let g:NERDTreeNodeDelimiter = "\u00a0"
-
-"YouCompleteMe
-let g:ycm_collect_identifiers_from_comments_and_strings = 0
-let g:ycm_min_num_of_chars_for_completion=2
-let g:ycm_cache_omnifunc=0
-let g:ycm_seed_identifiers_with_syntax=1
-let g:ycm_complete_in_comments = 1
-let g:ycm_complete_in_strings = 1
-let g:ycm_autoclose_preview_window_after_completion = 1
-let g:ycm_autoclose_preview_window_after_insertion = 1
-let g:ycm_python_binary_path = '/usr/bin/python3'
-map <C-G>  :YcmCompleter GoToDefinitionElseDeclaration<CR>
-map <C-F>  :tab split \| YcmCompleter GoToDefinitionElseDeclaration<CR>
-let g:ycm_global_ycm_extra_conf = '~/.vim/bundle/YouCompleteMe/third_party/ycmd/cpp/ycm/.ycm_extra_conf.py'
-set complete-=i
 
 "Syntastics
 let g:syntastic_error_symbol='>>'
@@ -108,6 +115,25 @@ nnoremap <leader>s  :call ToggleErrors()<cr>
 nnoremap <leader>sn :lnext<cr>
 nnoremap <leader>sp :lprevious<cr>
 
+" lsp setting
+if executable('pyls')
+    au User lsp_setup call lsp#register_server({
+        \ 'name': 'pyls',
+        \ 'cmd': {server_info->['pyls']},
+        \ 'whitelist': ['python'],
+        \ 'workspace_config': {'pyls': {'plugins': {'pydocstyle': {'enabled': v:true}}}}
+        \ })
+endif
+
+let g:lsp_diagnostics_enabled = 0         " disable diagnostics support
+let g:lsp_document_highlight_enabled = 0  " disable highlight references
+
+" jedi
+let g:jedi#use_tabs_not_buffers = 1
+let g:jedi#goto_definitions_command = "<C-f>"
+let g:jedi#popup_select_first = 1
+inoremap <expr><tab> pumvisible() ? "\<c-n>" : "\<tab>"
+
 "-----------------
 "Useful Function
 "-----------------
@@ -120,7 +146,7 @@ map <C-l> <C-W>l
 
 "Python File Head
 function HeaderPython()
-    call setline(1, "#!/usr/bin/python3")
+    call setline(1, "#!/usr/bin/env python3")
     call append(1, "# -*- coding:utf-8 -*-")
     "call append(2, "# author:Wang Feng" . strftime('%Y-%m-%d %T', localtime()))
     normal G
@@ -145,4 +171,3 @@ functio! CompileRunGcc()
         :!bash %
     endif
 endfunction
-
