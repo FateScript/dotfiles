@@ -45,6 +45,7 @@ filetype plugin indent on    " required
 syntax on
 
 let mapleader = "\<Space>"
+inoremap jj <Esc>`^`       " map Esc to jj
 
 "highlight current line
 au WinLeave * set nocursorline nocursorcolumn
