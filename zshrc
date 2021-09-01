@@ -22,6 +22,7 @@ alias -g L='| less'
 alias -g JL='| jq | less'
 alias -g CL='| pygmentize | less'
 alias -g G='| grep'
+alias -g KILL="| awk '{print \$2}' | head -n -1 | xargs kill -9"
 
 alias m='make'
 
@@ -35,6 +36,8 @@ alias ip3='ipython3'
 alias rf='readlink -f'
 
 alias findname='find . -name'
+
+alias pshow="ps -ef | grep"
 
 # diff aliases
 alias diffdir="diff --recursive  --exclude '*.txt' --exclude '*.pkl' --exclude '*__pycache__*'"
@@ -52,6 +55,7 @@ alias gd='git diff'
 alias gdown='git reset HEAD'
 alias gremove='git checkout --'
 alias grm='git rm'
+alias gr="git remote"
 
 
 if [ $OS_DISTRIBUTION = 'arch' ]; then
