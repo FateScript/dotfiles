@@ -34,9 +34,10 @@ alias ip3='ipython3'
 
 alias rf='readlink -f'
 
-alias a3='source ~/anaconda3/bin/activate'
-alias c3='~/anaconda3/bin/conda'
 alias findname='find . -name'
+
+# diff aliases
+alias diffdir="diff --recursive  --exclude '*.txt' --exclude '*.pkl' --exclude '*__pycache__*'"
 
 # tar aliases
 alias tarinfo="tar -tf"

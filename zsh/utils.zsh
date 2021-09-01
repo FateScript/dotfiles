@@ -6,7 +6,6 @@ get_os_distribution() {
 OS_DISTRIBUTION=$(get_os_distribution)
 
 act_venv() {
-    if [ $1 -e ]
     source ~/env/$1/bin/activate
 }
 
