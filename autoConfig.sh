@@ -6,25 +6,6 @@ prepare_flake8()
     cp flake8 ~/.flake8
 }
 
-install_vundle()
-{
-    cp light_vimrc ~/.vimrc
-    git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
-    vim +PluginInstall +qall
-}
-
-install_ycm()
-{
-    pushd ~/.vim/bundle/YouCompleteMe
-    python3 install.py
-    # sudo apt install build-essential cmake python3-dev
-    popd
-
-    pushd ~/.vim/bundle/YouCompleteMe
-    python3 install.py --clang-completer
-    popd
-}
-
 prepare_tmux()
 {
     sudo apt-get install tmux
@@ -59,6 +40,4 @@ install_extra_useful_tools()
 prepare_flake8
 prepare_tmux
 prepare_zsh
-install_vundle
-install_ycm
 install_extra_useful_tools
