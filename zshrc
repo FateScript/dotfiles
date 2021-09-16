@@ -30,7 +30,7 @@ alias vi='vim'
 alias v=vim
 alias c='cat'
 
-alias ip3='ipython3'
+alias ipy="python -c 'import IPython; IPython.terminal.ipapp.launch_new_instance()'"
 
 alias rf='readlink -f'
 
@@ -54,10 +54,12 @@ alias gs='git status'
 alias ga='git add'
 alias gm='git commit -m'
 alias gd='git diff'
+alias grm='git rm'
+alias gmv='git mv'
+alias gck='git checkout'
+alias gr="git remote"
 alias gdown='git reset HEAD'
 alias gremove='git checkout --'
-alias grm='git rm'
-alias gr="git remote"
 
 
 if [ $OS_DISTRIBUTION = 'arch' ]; then
@@ -86,6 +88,7 @@ conf() {
 		xmonad)		vim ~/.xmonad/xmonad.hs ;;
 		tmux)		vim ~/.tmux.conf ;;
 		vim)		vim ~/.config/nvim/init.vim ;;
+		nvim)		vim ~/.vimrc ;;
 		zsh)		vim ~/.zshrc ;;
 		*)		echo "Unknown application $1" ;;
 	esac

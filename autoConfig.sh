@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
 
-prepare_flake8()
-{
-    pip3 install --user flake8
-    cp flake8 ~/.flake8
-}
-
 prepare_tmux()
 {
     sudo apt-get install tmux
@@ -37,7 +31,6 @@ install_extra_useful_tools()
     install_fzf
 }
 
-prepare_flake8
 prepare_tmux
 prepare_zsh
 install_extra_useful_tools
