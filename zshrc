@@ -22,7 +22,6 @@ alias -g L='| less'
 alias -g JL='| jq | less'
 alias -g CL='| pygmentize | less'
 alias -g G='| grep'
-alias -g KILL="| awk '{print \$2}' | head -n -1 | xargs kill -9"
 
 alias m='make'
 
@@ -37,10 +36,13 @@ alias rf='readlink -f'
 
 alias findname='find . -name'
 
+# kill process with python, run `pshow python KILL`
 alias pshow="ps -ef | grep"
+alias -g KILL="| awk '{print \$2}' | head -n -1 | xargs kill -9"
 
-# diff aliases
-alias diffdir="diff --recursive  --exclude '*.txt' --exclude '*.pkl' --exclude '*__pycache__*'"
+# diff dir a and b, run `diffdir a b DIFF`
+alias diffdir="diff --exclude '*.txt' --exclude '*.pkl' --exclude '*__pycache__*'"
+alias -g DIFF="--width=$COLUMNS --suppress-common-lines --side-by-side --recursive"
 
 # tar aliases
 alias tarinfo="tar -tf"
@@ -90,6 +92,8 @@ conf() {
 }
 # }
 
+# enable gruvbox work in vimrc
+export TERM=xterm-256color
 
 # ssh-agent {
 #
