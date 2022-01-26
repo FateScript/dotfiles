@@ -244,7 +244,7 @@ antigen () {
 # Returns
 #   List of themes by name
 -antigen-get-themes () {
-  local library='robbyrussell/oh-my-zsh'
+  local library='ohmyzsh/ohmyzsh'
   local bundle=$(-antigen-find-bundle $library)
 
   if [[ -n "$bundle" ]]; then
@@ -433,7 +433,7 @@ antigen () {
 
   # Pre-startup initializations.
   -antigen-set-default ANTIGEN_OMZ_REPO_URL \
-    https://github.com/robbyrussell/oh-my-zsh.git
+    https://github.com/ohmyzsh/ohmyzsh.git
   -antigen-set-default ANTIGEN_PREZTO_REPO_URL \
     https://github.com/sorin-ionescu/prezto.git
   -antigen-set-default ANTIGEN_DEFAULT_REPO_URL $ANTIGEN_OMZ_REPO_URL

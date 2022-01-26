@@ -28,38 +28,18 @@ git clone https://github.com/VundleVim/Vundle.vim.git $HOME/.vim/bundle/Vundle.v
 
 ## Install Vim Plugin
 
-####You Complete Me
-为了使用YouCompleteMe(YCM)需要我们手动编译一下插件
-首先进入YCM的文件夹执行install.py(不支持C语法)
-```shell
-cd $HOME/.vim/bundle/YouCompleteMe
-python3 install.py
+####Vim Plugin
+打开vim，输入
 ```
-这一步如果出现问题，可能需要在执行如下命令
-```shell
-cd $HOME/.vim/bundle/YouCompleteMe
-git submodule update --init --recursive
+:PluginInstall
 ```
 
-如果需要支持C语法则需要执行(Ubuntu平台)
-```shell
-sudo apt install build-essential cmake python3-dev
+####LSP
+在完成LSP的安装之后，在vim的命令模式下，输入
 ```
-之后进入文件夹执行
-```shell
-cd $HOME/.vim/bundle/YouCompleteMe
-python3 install.py --clang-completer
+:LspInstallServer
 ```
 
-**如果使用python后发现没有补全效果，则需要对.vimrc文件进行如下修改：**
-将
-```vim
-let g:ycm_python_binary_path = 'python'
-```
-改成自己的配置，比如
-```vim
-let g:ycm_python_binary_path = '/usr/bin/python3'
-```
 
 ## Oh-my-zsh Configuration
 首先需要安装zsh以及一些依赖
