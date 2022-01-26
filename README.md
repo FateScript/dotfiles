@@ -28,18 +28,16 @@ git clone https://github.com/VundleVim/Vundle.vim.git $HOME/.vim/bundle/Vundle.v
 
 ## Install Vim Plugin
 
-####Vim Plugin
+#### Vim Plugin
 打开vim，输入
 ```
 :PluginInstall
 ```
-
-####LSP
+#### LSP
 在完成LSP的安装之后，在vim的命令模式下，输入
 ```
 :LspInstallServer
 ```
-
 
 ## Oh-my-zsh Configuration
 首先需要安装zsh以及一些依赖
