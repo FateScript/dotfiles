@@ -87,8 +87,8 @@ conf() {
 	case $1 in 
 		xmonad)		vim ~/.xmonad/xmonad.hs ;;
 		tmux)		vim ~/.tmux.conf ;;
-		vim)		vim ~/.config/nvim/init.vim ;;
-		nvim)		vim ~/.vimrc ;;
+		vim)		vim ~/.vimrc ;;
+		nvim)		vim ~/.config/nvim/init.vim ;;
 		zsh)		vim ~/.zshrc ;;
 		*)		echo "Unknown application $1" ;;
 	esac
