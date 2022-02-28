@@ -33,6 +33,10 @@ Plug 'scrooloose/syntastic'
 Plug 'scrooloose/nerdtree'
 Plug 'tpope/vim-commentary'
 
+" fzf
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+
 " theme
 Plug 'morhetz/gruvbox'
 
