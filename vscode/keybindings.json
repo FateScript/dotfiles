@@ -1,0 +1,102 @@
+// Place your key bindings in this file to override the defaults
+[
+    // use Vim extension
+    {
+        "key": "ctrl+a cmd+v",
+        "command": "toggleVim",
+        "when": "editorTextFocus",
+    },
+    // use tab to select the next suggestion
+    {
+        "key": "tab",
+        "command": "acceptSelectedSuggestion",
+        "when": "suggestWidgetVisible && textInputFocus"
+    },
+    {
+        "key": "shift+tab",
+        "command": "acceptSelectedSuggestion",
+        "when": "suggestWidgetVisible && textInputFocus"
+    },
+    {
+        "key": "tab",
+        "command": "selectNextSuggestion",
+        "when": "editorTextFocus && suggestWidgetMultipleSuggestions && suggestWidgetVisible"
+    },
+    {
+        "key": "shift+tab",
+        "command": "selectPrevSuggestion",
+        "when": "editorTextFocus && suggestWidgetMultipleSuggestions && suggestWidgetVisible"
+    },
+    // ctrl+a hotkeys
+    // ctrl+a h to switch focus between file explorer and editor
+    {
+        "key": "ctrl+a h",
+        "command": "workbench.files.action.focusFilesExplorer",
+        "when": "editorTextFocus && vim.active",
+    },
+    {
+        "key": "ctrl+a h",
+        "command": "workbench.action.focusActiveEditorGroup",
+        "when": "filesExplorerFocus && vim.active",
+    },
+    // ctrl+a l to switch focus between file explorer and editor
+    {
+        "key": "ctrl+a l",
+        "command": "workbench.files.action.focusFilesExplorer",
+        "when": "editorTextFocus && vim.active",
+    },
+    {
+        "key": "ctrl+a l",
+        "command": "workbench.action.focusActiveEditorGroup",
+        "when": "filesExplorerFocus && vim.active",
+    },
+    // ctrl+a e to focus editor
+    {
+        "key": "ctrl+a e",
+        "command": "editor.action.showHover",
+        "when": "textInputFocus",
+    },
+    // ctrl+a p to focus problem
+    {
+        "key": "ctrl+a p",
+        "command": "workbench.actions.view.problems",
+        "when": "editorTextFocus && vim.active",
+    },
+    // ctrl+a t to focus terminal
+    {
+        "key": "ctrl+a t",
+        "command": "workbench.action.terminal.focus",
+        "when": "editorTextFocus",
+    },
+    // <Enter> to open dir and file in file explorer
+    {
+        // unbind renameFile command
+        "key": "enter",
+        "command": "-renameFile",
+        "when": "explorerViewletVisible && filesExplorerFocus"
+    },
+    {
+        "key": "enter",
+        "command": "list.select",
+        "when": "listFocus && !inputFocus"
+    },
+    // use cmd+e(explorer) to toggle SideBar
+    {
+        "key": "cmd+e",
+        "command": "workbench.view.explorer",
+    },
+    {
+        "key": "cmd+e",
+        "command": "-workbench.view.explorer"
+    },
+    {
+        "key": "cmd+e",
+        "command": "workbench.action.toggleSidebarVisibility",
+        "when": "explorerViewletVisible"
+    },
+    {
+        "key": "cmd+e",
+        "command": "-workbench.action.toggleSidebarVisibility",
+        "when": "explorerViewletVisible"
+    },
+]
