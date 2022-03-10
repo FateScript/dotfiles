@@ -58,7 +58,7 @@ set cursorline cursorcolumn
 
 "Edit Setting
 set report=0
-set number
+set number relativenumber
 set showmatch
 set showcmd                " show typed command in status bar
 set title                  " show file in titlebar
@@ -148,6 +148,9 @@ map <C-j> <C-W>j
 map <C-k> <C-W>k
 map <C-h> <C-W>h
 map <C-l> <C-W>l
+
+" Map Ctrl + p to open fuzzy find (FZF)
+nnoremap <c-p> :Files<cr>
 
 "Python File Head
 function HeaderPython()
