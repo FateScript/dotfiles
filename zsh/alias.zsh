@@ -3,6 +3,7 @@ alias -g L='| less'
 alias -g JL='| jq | less'
 alias -g CL='| pygmentize | less'
 alias -g G='| grep'
+alias -g X='| xargs'
 
 alias m='make'
 
@@ -12,6 +13,7 @@ alias v=vim
 alias c='cat'
 
 alias ipy="python -c 'import IPython; IPython.terminal.ipapp.launch_new_instance()'"
+alias pip3="python3 -m pip "
 
 alias rf='readlink -f'
 
@@ -38,9 +40,9 @@ alias gd='git diff'
 alias grm='git rm'
 alias gmv='git mv'
 alias gck='git checkout'
-alias gr="git remote"
+alias gr="git remote -v"
 alias gdown='git reset HEAD'
-alias gremove='git checkout --'
+
 
 if [ $OS_DISTRIBUTION = 'arch' ]; then
 	alias yS='yaourt -S --noconfirm --needed'

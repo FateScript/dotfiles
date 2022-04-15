@@ -10,11 +10,34 @@ get_os_distribution() {
 
 OS_DISTRIBUTION=$(get_os_distribution)
 
-# Developement Settings {
-act_venv() {
-    source ~/workspace/env/$1/bin/activate
+ensure_dir() {
+    if [[ ! -d $1 ]]; then
+        mkdir -p $1
+    fi
 }
 
+env_get() {
+    local env_value
+    env_value=$(env | grep $1 | cut -d "=" -f2)
+    if [[ -z $env_value ]]; then  # not exist
+        env_value=$2
+    fi
+    echo $env_value
+}
+
+# Developement Settings {
+# python venv fucntion
+act_venv() {
+    local venv_dir
+    venv_dir=$(env_get VENV_WORKDIR ~/workspace/env/)
+    source $venv_dir$1/bin/activate
+}
+
+ls_venv() {
+    local venv_dir
+    venv_dir=$(env_get VENV_WORKDIR ~/workspace/env/)
+    ls $venv_dir
+}
 # auto set venv
 tmux_venv() {
     tmux set-env VIRTUAL_ENV $VIRTUAL_ENV
@@ -23,6 +46,16 @@ tmux_venv() {
 # auto unset venv
 tmux_rm_venv() {
     tmux set-env -r VIRTUAL_ENV
+}
+
+# use ag to search the content and open the file
+agopen() {
+    local file_lino="$(ag --filename $1 | fzf | awk -F '[:]' '{print $1, $2}')"
+    if [ ! -z "$file_lino" ]; then
+        local file="$(echo "$file_lino" | awk -F '[  ]' '{print $1}')"
+        local lino="$(echo "$file_lino" | awk -F '[  ]' '{print $2}')"
+        echo -e "+$lino $file" | xargs -o vim
+    fi
 }
 
 # configuration shortcut {
@@ -40,16 +73,6 @@ conf() {
 }
 # }
 
-# search the content and open the file
-agopen() {
-    local file_lino="$(ag --filename $1 | fzf | awk -F '[:]' '{print $1, $2}')"
-    if [ ! -z "$file_lino" ]; then
-        local file="$(echo "$file_lino" | awk -F '[  ]' '{print $1}')"
-        local lino="$(echo "$file_lino" | awk -F '[  ]' '{print $2}')"
-        echo -e "+$lino $file" | xargs -o vim
-    fi
-}
-
 # list disk usage. use -r to show descending order
 duls() {
     local val="$(du -sk * | sort -n $1 | sed -E ':a; s/([[:digit:]]+)([[:digit:]]{3})/\1,\2/; ta')"
@@ -57,4 +80,14 @@ duls() {
     local val="$(echo $val | awk -F'\t' '{printf "%10s %s\n",$1,substr($0,length($1)+2)}')"
     echo $val
 }
+
+timelog() {
+    local now=$(date +'%Y-%m-%d %H:%M:%S')
+    echo -e "\033[32m$now\033[0m" "$@"
+}
+
+warnlog() {
+    echo -e "\033[31m$@\033[0m"
+}
+
 # }

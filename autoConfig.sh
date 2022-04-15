@@ -21,6 +21,16 @@ install_fzf()
     ~/.fzf/install
 }
 
+install_ranger()
+{
+    local install_path
+    install_path=~/.ranger
+    git clone https://github.com/ranger/ranger.git $install_path
+    pushd $install_path
+    sudo make install
+    popd
+}
+
 install_extra_useful_tools()
 {
     sudo apt install -y silversearcher-ag
@@ -28,7 +38,9 @@ install_extra_useful_tools()
     sudo apt install -y htop
     sudo apt install -y jq
     sudo apt install -y shellcheck
+    # sudo apt install -y fd-find
     install_fzf
+    install_ranger
 }
 
 prepare_tmux
