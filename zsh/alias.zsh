@@ -12,12 +12,16 @@ alias vi='vim'
 alias v=vim
 alias c='cat'
 
-alias ipy="python -c 'import IPython; IPython.terminal.ipapp.launch_new_instance()'"
+alias ip3="python3 -c 'import IPython; IPython.terminal.ipapp.launch_new_instance()'"
 alias pip3="python3 -m pip "
 
 alias rf='readlink -f'
 
 alias findname='find . -name'
+
+# alternatives
+alias alter_conf="sudo update-alternatives --config"
+alias alter_install="sudo update-alternatives --install"
 
 # kill process with python, run `pshow python KILL`
 alias pshow="ps -ef | grep"
