@@ -7,6 +7,7 @@ antigen use oh-my-zsh
 
 antigen bundle git
 antigen bundle zsh-users/zsh-syntax-highlighting
+antigen bundle zsh-users/zsh-autosuggestions
 
 antigen bundle autojump
 [ $OS_DISTRIBUTION = 'ubuntu' ] && source /usr/share/autojump/autojump.sh
