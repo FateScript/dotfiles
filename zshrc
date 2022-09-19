@@ -1,5 +1,6 @@
 # some utilities
 source $HOME/.zsh/utils.zsh
+source $HOME/.zsh/install.zsh
 
 # antigen plugins {
 source $HOME/.zsh/antigen.zsh

@@ -1,9 +1,9 @@
 # dotfiles
 日常使用Ubuntu的一些配置文件，git clone之后解压使用
+
 ## Use script to config
 运行autoConfig.sh即可一键配置，推荐vm或者实体机器使用，如果是workspace下推荐自由配置
 ```shell
-chmod +x autoConfig.sh
 ./autoConfig.sh
 ```
 如果需要个性化配置请阅读如下部分
