@@ -34,14 +34,12 @@ VENV_DIR="$HOME/workspace/env"
 
 create_venv()
 {
-    local venv_name
-    venv_name=$1
-    python3 -m venv $VENV_DIR/$venv_name
+    python3 -m venv $VENV_DIR/$1
 }
 
 act_venv()
 {
-    source $VENV_DIR/bin/activate
+    source $VENV_DIR/$1/bin/activate
 }
 
 ls_venv()
