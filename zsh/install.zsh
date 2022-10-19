@@ -71,6 +71,7 @@ install_tools()
     sudo apt install -y htop
     sudo apt install -y jq
     sudo apt install -y shellcheck
+    sudo apt install -y axel
     install_ag
     install_rg
     install_fzf
