@@ -78,6 +78,11 @@ install_tools()
     install_ranger
 }
 
+install_py_pack()
+{
+    python3 -m pip install --upgrade setuptools wheel twine
+}
+
 install_all()
 {
     prepare_tmux

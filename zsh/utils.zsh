@@ -175,4 +175,11 @@ show_cursor()
 {
     echo -e "\033[?25h"
 }
+
+py_pack()
+{
+    timelog "packing whl now..."
+    python3 setup.py sdist bdist_wheel
+    timelog "pack whl into dist directory done..."
+}
 # }
