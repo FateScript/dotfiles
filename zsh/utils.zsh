@@ -28,6 +28,11 @@ cdw()
     cd $(updir $(which $1))
 }
 
+cdfzf()
+{
+    cdw $(fzf)
+}
+
 env_get()
 {
     local env_value
