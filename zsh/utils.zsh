@@ -18,6 +18,16 @@ ensure_dir()
     fi
 }
 
+updir()
+{
+    echo ${1%/*}
+}
+
+cdw()
+{
+    cd $(updir $(which $1))
+}
+
 env_get()
 {
     local env_value
