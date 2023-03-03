@@ -11,6 +11,17 @@ get_os_distribution()
 
 OS_DISTRIBUTION=$(get_os_distribution)
 
+os_install()
+{
+    local package_name=$1
+    if [ "$OS_DISTRIBUTION" = "macos" ]; then
+        brew install $package_name
+    elif [ "$OS_DISTRIBUTION" = "ubuntu" ]; then
+        sudo apt update
+        sudo apt-get install -y $package_name
+    fi
+}
+
 ensure_dir()
 {
     if [[ ! -d "$1" ]]; then

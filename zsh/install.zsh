@@ -1,13 +1,13 @@
 
 prepare_tmux()
 {
-    sudo apt-get install tmux
+    os_install tmux
     cp tmux.conf ~/.tmux.conf
 }
 
 prepare_zsh()
 {
-    sudo apt update
+    os_install zsh
     sudo apt install -y zsh python-pygments autojump
     install_ohmyzsh
     cp zshrc ~/.zshrc
@@ -59,27 +59,26 @@ install_ranger()
 
 install_rg()
 {
-    sudo apt install -y ripgrep
-}
-
-install_ag()
-{
-    sudo apt install -y silversearcher-ag
+    os_install ripgrep
 }
 
 install_fd()
 {
-    sudo apt install -y fd-find
-    ln -s $(which fdfind) ~/.local/bin/fd
+    if [ "$OS_DISTRIBUTION" = "macos" ]; then
+        brew install fd
+    elif [ "$OS_DISTRIBUTION" = "ubuntu" ]; then
+        sudo apt install -y fd-find
+        ln -s $(which fdfind) ~/.local/bin/fd
+    fi
 }
 
 install_tools()
 {
-    sudo apt install -y tig
-    sudo apt install -y htop
-    sudo apt install -y jq
-    sudo apt install -y shellcheck
-    sudo apt install -y axel
+    os_install tig
+    os_install htop
+    os_install jq
+    os_install shellcheck
+    os_install axel
     install_ag
     install_rg
     install_fzf
