@@ -1,22 +1,25 @@
 # some utilities
-source $HOME/.zsh/utils.zsh
-source $HOME/.zsh/install.zsh
 
-# antigen plugins {
-source $HOME/.zsh/antigen.zsh
-antigen use oh-my-zsh
+export ZSH="$HOME/.oh-my-zsh"
 
-antigen bundle git
-antigen bundle zsh-users/zsh-syntax-highlighting
-antigen bundle zsh-users/zsh-autosuggestions
+# Set name of the theme to load --- if set to "random", it will
+# load a random theme each time oh-my-zsh is loaded, in which case,
+# to know which specific one was loaded, run: echo $RANDOM_THEME
+# See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
+ZSH_THEME="candy"
 
-antigen bundle autojump
-[ $OS_DISTRIBUTION = 'ubuntu' ] && source /usr/share/autojump/autojump.sh
+# Standard plugins can be found in $ZSH/plugins/
+# Custom plugins may be added to $ZSH_CUSTOM/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(
+    git
+    autojump
+    zsh-autosuggestions
+    zsh-syntax-highlighting
+)
 
-antigen theme candy
-
-antigen apply
-# }
+[ "$OS_DISTRIBUTION" = 'ubuntu' ] && source /usr/share/autojump/autojump.sh
 
 # enable gruvbox work in vimrc
 export TERM=xterm-256color
@@ -29,14 +32,23 @@ bindkey '^D' beginning-of-line  # ctrl-d
 
 # }
 
-# alias
+# alias and self defined function
 source $HOME/.zsh/alias.zsh
+source $HOME/.zsh/utils.zsh
+source $HOME/.zsh/install.zsh
+source $ZSH/oh-my-zsh.sh
+
+
+# compdef
+#
+compdef _conf conf
+compdef _act_venv act_venv
 
 # ssh-agent {
 #
 # On Ubuntu, dbus will start ssh-agent
 
-if [ $OS_DISTRIBUTION = 'arch' ]; then
+if [ "$OS_DISTRIBUTION" = "arch" ]; then
 	if ! pgrep -u $USER ssh-agent > /dev/null; then
 	    [ -d ~/.config ] || mkdir -v ~/.config
 	    ssh-agent > ~/.config/ssh-agent-thing

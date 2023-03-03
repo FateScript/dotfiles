@@ -52,6 +52,23 @@ create_venv()
     python3 -m venv "$VENV_DIR"/"$1"
 }
 
+_act_venv()
+{
+    local state
+	_arguments '1: :->list'
+    case $state in
+        list)
+            _complete_venv
+            ;;
+    esac
+}
+
+_complete_venv(){
+	choices=`ls_venv`
+	suf=( -S '' )
+	_arguments -O suf "*:value:( $choices )"
+}
+
 act_venv()
 {
     source "$VENV_DIR"/"$1"/bin/activate
@@ -102,6 +119,11 @@ rgopen()
 }
 
 # configuration shortcut {
+
+_conf(){
+	_arguments '1: :(xmonad tmux vim nvim zsh zshut zshal zshins)'
+}
+
 conf()
 {
 	case $1 in

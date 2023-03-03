@@ -50,7 +50,7 @@ alias gr="git remote -v"
 alias gdown="git reset HEAD"
 
 
-if [ $OS_DISTRIBUTION = "arch" ]; then
+if [ "$OS_DISTRIBUTION" = "arch" ]; then
 	alias yS="yaourt -S --noconfirm --needed"
 	alias ySs="yaourt -Ss"
 	alias pS="sudo pacman -S --noconfirm --needed"

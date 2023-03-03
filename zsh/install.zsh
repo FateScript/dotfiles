@@ -9,9 +9,17 @@ prepare_zsh()
 {
     sudo apt update
     sudo apt install -y zsh python-pygments autojump
+    install_ohmyzsh
     cp zshrc ~/.zshrc
     cp -r zsh ~/.zsh
     sudo chsh "$USER" -s /usr/bin/zsh
+}
+
+install_ohmyzsh()
+{
+    sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
 }
 
 update_conf()
