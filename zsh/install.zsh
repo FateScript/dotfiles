@@ -54,6 +54,16 @@ install_fzf()
     fi
 }
 
+install_fzf()
+{
+    if [ -d "$HOME/.fzf" ]; then
+        echo "fzf already installed"
+    else
+        git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+        ~/.fzf/install
+    fi
+}
+
 install_ranger()
 {
     local install_path

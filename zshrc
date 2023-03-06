@@ -1,6 +1,7 @@
 # some utilities
 
 export ZSH="$HOME/.oh-my-zsh"
+setopt complete_aliases  # enable alias completion
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
@@ -43,6 +44,13 @@ source $ZSH/oh-my-zsh.sh
 #
 compdef _conf conf
 compdef _act_venv act_venv
+compdef _git ga=git-add
+compdef _git gc=git-commit
+compdef _git gp=git-push
+compdef _git gf=git-fetch
+compdef _git gck=git-checkout
+compdef _git gb=git-branch
+compdef _git gr=git-remote
 
 # ssh-agent {
 #
