@@ -2,35 +2,46 @@
 prepare_tmux()
 {
     os_install tmux
-    cp tmux.conf ~/.tmux.conf
+    cp tmux.conf $HOME/.tmux.conf
 }
 
 prepare_zsh()
 {
     os_install zsh
-    sudo apt install -y zsh python-pygments autojump
     install_ohmyzsh
-    cp zshrc ~/.zshrc
-    cp -r zsh ~/.zsh
+    cp zshrc $HOME/.zshrc
+    cp -r zsh $HOME/.zsh
     sudo chsh "$USER" -s /usr/bin/zsh
 }
 
 install_ohmyzsh()
 {
     sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting
+
+    local auto_suggest_path="$ZSH_CUSTOM/plugins/zsh-autosuggestions"
+    if [ -d "$auto_suggest_path" ]; then
+        echo "zsh-autosuggestions already installed"
+    else
+        git clone auto_suggest_path
+    fi
+
+    local syntax_highlight_path="$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
+    if [ -d "$syntax_highlight_path" ]; then
+        echo "zsh-syntax-highlighting already installed"
+    else
+        git clone syntax_highlight_path
+    fi
 }
 
 update_conf()
 {
-    cp tmux.conf ~/.tmux.conf
-    if [ -d ~/.zsh ]; then
+    cp tmux.conf $HOME/.tmux.conf
+    if [ -d $HOME/.zsh ]; then
         echo "remove ~/.zsh dir"
-        rm -rf ~/.zsh
+        rm -rf $HOME/.zsh
     fi
-    cp zshrc ~/.zshrc
-    cp -r zsh ~/.zsh
+    cp zshrc $HOME/.zshrc
+    cp -r zsh $HOME/.zsh
 }
 
 install_fzf()
@@ -39,14 +50,14 @@ install_fzf()
         echo "fzf already installed"
     else
         git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-        ~/.fzf/install
+        $HOME/.fzf/install
     fi
 }
 
 install_ranger()
 {
     local install_path
-    install_path=~/.ranger
+    install_path=$HOME/.ranger
     if [ -d  $install_path ]; then
         echo "$install_path already existed"
     else
@@ -68,7 +79,7 @@ install_fd()
         brew install fd
     elif [ "$OS_DISTRIBUTION" = "ubuntu" ]; then
         sudo apt install -y fd-find
-        ln -s $(which fdfind) ~/.local/bin/fd
+        ln -s $(which fdfind) $HOME/.local/bin/fd
     fi
 }
 
