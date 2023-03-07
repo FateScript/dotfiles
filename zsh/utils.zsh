@@ -58,6 +58,18 @@ env_get()
 # python venv fucntion
 VENV_DIR="$HOME/workspace/env"
 
+PATH_CKPT="$HOME"
+
+pckpt()
+{
+    export PATH_CKPT=`pwd`
+}
+
+jckpt()
+{
+    cd $PATH_CKPT
+}
+
 create_venv()
 {
     python3 -m venv "$VENV_DIR"/"$1"
@@ -230,4 +242,21 @@ py_pack()
     python3 setup.py sdist bdist_wheel
     timelog "pack whl into dist directory done..."
 }
+
+# execute a command until it failed, log the count of run.
+check()
+{
+    eval "$1"
+    local check="$?"
+    local count=1
+
+    while [ "$check" -eq 0 ]
+    do
+        eval "$1"
+        check="$?"
+        count=$(( count + 1 ))
+    done
+    timelog "total count:" $count
+}
+
 # }
