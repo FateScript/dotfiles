@@ -17,17 +17,23 @@
           "after": ["<Esc>"],
         },
     ],
+    "vim.normalModeKeyBindingsNonRecursive": [
+      // FIX https://github.com/VSCodeVim/Vim/issues/8157#issuecomment-1426704638
+      // Wait for new release, else we should migrate to using vscode-neovim extension
+      { "before": [ "u" ], "commands": [ "undo" ] },
+      { "before": [ "c-r" ], "commands": [ "redo" ] }
+    ],
     "vim.normalModeKeyBindings": [
       {
-        // gt to nextTab like chrome
-        "before": ["g", "t"],
+        // R / shift+r to nextTab like Surfingkeys
+        "before": ["R"],
         "commands": ["workbench.action.nextEditor"],
         "when": "editorTextFocus",
         "silent": true,
       },
       {
-        // gT to prevTab like chrome
-        "before": ["g", "shift+t"],
+        // E / shift+e to prevTab like Surfingkeys
+        "before": ["E"],
         "commands": ["workbench.action.previousEditor"],
         "when": "editorTextFocus",
         "silent": true,
@@ -68,11 +74,10 @@
       "ms-python.vscode-pylance": ["workspace"],
       "ms-vscode.cpptools": ["workspace"],
       "eamodio.gitlens": ["workspace"],
-      "rlivings39.fzf-quick-open": ["workspace"],
       // local plugin
-      "sourcery.sourcery": ["ui"],
       "njpwerner.autodocstring": ["ui"],
       "GitHub.copilot": ["ui"],
+      "github.copilot-labs": ["ui"],
       "James-Yu.latex-workshop": ["ui"],
       "jdinhlife.gruvbox": ["ui"],
       "yzhang.markdown-all-in-one": ["ui"],
@@ -100,7 +105,11 @@
     "latex-workshop.latex.tools": [
       {
         "name": "xelatex", "command": "xelatex",
-        "args": ["-synctex=1", "-interaction=nonstopmode", "-file-line-error", "%DOCFILE%"]
+        "args": [
+          "-synctex=1", "-interaction=nonstopmode", "-file-line-error",
+          "-shell-escape",
+          "%DOCFILE%"
+        ]
       },
       {
         "name": "pdflatex", "command": "pdflatex",
@@ -114,4 +123,7 @@
       {"name": "xe->bib->xe->xe", "tools": ["xelatex", "bibtex", "xelatex", "xelatex"]},
       {"name": "pdf->bib->pdf->pdf", "tools": ["pdflatex", "bibtex", "pdflatex", "pdflatex"]}
     ],
+    "[python]": {
+      "editor.formatOnType": true
+    },
 }

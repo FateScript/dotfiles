@@ -6,6 +6,18 @@
         "command": "toggleVim",
         "when": "editorTextFocus",
     },
+    // vim setting
+    // ctrl+h to left split view
+    {
+        "key": "ctrl+h",
+        "command": "workbench.action.focusLeftGroup",
+        "when": "editorTextFocus && vim.active",
+    },
+    {
+        "key": "ctrl+l",
+        "command": "workbench.action.focusRightGroup",
+        "when": "editorTextFocus && vim.active",
+    },
     // use tab to select the next suggestion
     {
         "key": "tab",
@@ -28,49 +40,55 @@
         "when": "editorTextFocus && suggestWidgetMultipleSuggestions && suggestWidgetVisible"
     },
     // ctrl+a hotkeys
-    // ctrl+a h to switch focus between file explorer and editor
+    // ctrl+a h to switch focus between sidebar and editor
+    // h and l are used in vim
     {
         "key": "ctrl+a h",
-        "command": "workbench.files.action.focusFilesExplorer",
+        "command": "workbench.action.focusSideBar",
         "when": "editorTextFocus && vim.active",
     },
     {
         "key": "ctrl+a h",
         "command": "workbench.action.focusActiveEditorGroup",
-        "when": "filesExplorerFocus && vim.active",
+        "when": "sideBarFocus && vim.active",
     },
-    // ctrl+a l to switch focus between file explorer and editor
+    // ctrl+a l to switch focus between sidebar and editor
     {
         "key": "ctrl+a l",
-        "command": "workbench.files.action.focusFilesExplorer",
+        "command": "workbench.action.focusSideBar",
         "when": "editorTextFocus && vim.active",
     },
     {
         "key": "ctrl+a l",
         "command": "workbench.action.focusActiveEditorGroup",
-        "when": "filesExplorerFocus && vim.active",
+        "when": "sideBarFocus && vim.active",
     },
-    // ctrl+a e to focus editor
+    // ctrl+a e to focus editor, e means editor
     {
         "key": "ctrl+a e",
         "command": "editor.action.showHover",
         "when": "textInputFocus",
     },
-    // ctrl+a p to focus problem
+    // ctrl+a p to focus problem, p means problem
     {
         "key": "ctrl+a p",
         "command": "workbench.actions.view.problems",
         "when": "editorTextFocus && vim.active",
     },
-    // ctrl+a t to focus terminal
+    // ctrl+a t to focus terminal, t means terminal
     {
         "key": "ctrl+a t",
         "command": "workbench.action.terminal.focus",
         "when": "editorTextFocus",
     },
-    // <Enter> to open dir and file in file explorer
+    // press cmd + shift + F, enter to go to input, then j and k could be used to focus up and down. 
     {
-        // unbind renameFile command
+        "key": "enter",
+        "command": "search.focus.nextInputBox",
+        "when": "inSearchEditor && inputBoxFocus || inputBoxFocus && searchViewletVisible"
+    },
+    // unbind renameFile command and using enter to open file
+    {
         "key": "enter",
         "command": "-renameFile",
         "when": "explorerViewletVisible && filesExplorerFocus"
@@ -78,7 +96,13 @@
     {
         "key": "enter",
         "command": "list.select",
-        "when": "listFocus && !inputFocus"
+        "when": "explorerViewletVisible && filesExplorerFocus"
+    },
+    // cmd+enter to open file on the right
+    {
+        "key": "cmd+enter",
+        "command": "explorer.openToSide",
+        "when": "explorerViewletVisible && filesExplorerFocus"
     },
     // use cmd+e(explorer) to toggle SideBar
     {
