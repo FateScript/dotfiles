@@ -43,7 +43,7 @@ source $ZSH/oh-my-zsh.sh
 # compdef
 #
 compdef _conf conf
-compdef _act_venv act_venv
+compdef _act_venv act_venv rm_venv
 compdef _git ga=git-add
 compdef _git gc=git-commit
 compdef _git gp=git-push

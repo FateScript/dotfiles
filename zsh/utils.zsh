@@ -75,6 +75,12 @@ create_venv()
     python3 -m venv "$VENV_DIR"/"$1"
 }
 
+
+rm_venv()
+{
+    rm -rf "$VENV_DIR"/"$1"
+}
+
 _act_venv()
 {
     local state
