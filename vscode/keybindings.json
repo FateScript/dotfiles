@@ -63,11 +63,11 @@
         "command": "workbench.action.focusActiveEditorGroup",
         "when": "sideBarFocus && vim.active",
     },
-    // ctrl+a e to focus editor, e means editor
+    // ctrl+a e to focus file-explorer, e means file-explorer
     {
         "key": "ctrl+a e",
-        "command": "editor.action.showHover",
-        "when": "textInputFocus",
+        "command": "workbench.files.action.focusFilesExplorer",
+        "when": "textInputFocus || sideBarFocus",
     },
     // ctrl+a p to focus problem, p means problem
     {
