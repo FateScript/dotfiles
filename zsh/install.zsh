@@ -22,14 +22,14 @@ install_ohmyzsh()
     if [ -d "$auto_suggest_path" ]; then
         echo "zsh-autosuggestions already installed"
     else
-        git clone auto_suggest_path
+        git clone https://github.com/zsh-users/zsh-autosuggestions.git $auto_suggest_path
     fi
 
     local syntax_highlight_path="$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
     if [ -d "$syntax_highlight_path" ]; then
         echo "zsh-syntax-highlighting already installed"
     else
-        git clone syntax_highlight_path
+        git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $syntax_highlight_path
     fi
 }
 
