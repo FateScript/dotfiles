@@ -1,4 +1,15 @@
 
+os_install()
+{
+    local package_name=$1
+    if [ "$OS_DISTRIBUTION" = "macos" ]; then
+        brew install $package_name
+    elif [ "$OS_DISTRIBUTION" = "ubuntu" ]; then
+        sudo apt update
+        sudo apt-get install -y $package_name
+    fi
+}
+
 prepare_tmux()
 {
     os_install tmux
@@ -14,23 +25,44 @@ prepare_zsh()
     sudo chsh "$USER" -s /usr/bin/zsh
 }
 
-install_ohmyzsh()
+install_zsh_autojump()
 {
-    sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    local autojump_path="$ZSH_CUSTOM/plugins/autojump"
+    if [ -d "$autojump_path" ]; then
+        echo "autojump already installed"
+    else
+        git clone https://github.com/wting/autojump.git $autojump_path
+        cd $autojump_path
+        ./install.py
+    fi
+}
 
+install_zsh_autosuggest()
+{
     local auto_suggest_path="$ZSH_CUSTOM/plugins/zsh-autosuggestions"
     if [ -d "$auto_suggest_path" ]; then
         echo "zsh-autosuggestions already installed"
     else
         git clone https://github.com/zsh-users/zsh-autosuggestions.git $auto_suggest_path
     fi
+}
 
+install_zsh_syntax_highlight()
+{
     local syntax_highlight_path="$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
     if [ -d "$syntax_highlight_path" ]; then
         echo "zsh-syntax-highlighting already installed"
     else
         git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $syntax_highlight_path
     fi
+}
+
+install_ohmyzsh()
+{
+    sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    install_zsh_autosuggest
+    install_zsh_syntax_highlight
+    install_zsh_autojump
 }
 
 update_conf()
@@ -100,7 +132,7 @@ install_tools()
     os_install jq
     os_install shellcheck
     os_install axel
-    install_ag
+    # install_ag
     install_rg
     install_fzf
     install_ranger

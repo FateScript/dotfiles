@@ -19,6 +19,7 @@ alias pip="python -m pip "
 alias rf="readlink -f"
 
 alias findname="find . -name"
+alias show_cursor="echo -e '\033[?25h'"
 
 # alternatives
 alias alter_conf="sudo update-alternatives --config"
@@ -49,6 +50,8 @@ alias gck="git checkout"
 alias gr="git remote -v"
 alias gdown="git reset HEAD"
 
+# tmux alias
+alias ta="tmux a"
 
 if [ "$OS_DISTRIBUTION" = "arch" ]; then
 	alias yS="yaourt -S --noconfirm --needed"

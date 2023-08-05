@@ -1,5 +1,10 @@
 # some utilities
 
+safe_source()
+{
+    [ -f  "$1" ] && source "$1"
+}
+
 export ZSH="$HOME/.oh-my-zsh"
 setopt complete_aliases  # enable alias completion
 
@@ -26,19 +31,18 @@ plugins=(
 export TERM=xterm-256color
 
 # key bindings {
-
 # default beginning-of-line is ctrl-a, which conflicted with keybinding ctrl-a
 # used in tmux. 
-bindkey '^D' beginning-of-line  # ctrl-d 
+bindkey '^D' beginning-of-line  # Bind Ctrl + D to beginning-of-line
+bindkey '^F' forward-word  # Bind Ctrl + F to forward-word
+bindkey '^B' backward-word  # Bind Ctrl + B to backward-word
 
 # }
 
 # alias and self defined function
-source $HOME/.zsh/alias.zsh
-source $HOME/.zsh/utils.zsh
-source $HOME/.zsh/install.zsh
-source $ZSH/oh-my-zsh.sh
-
+safe_source $HOME/.zsh/alias.zsh
+safe_source $HOME/.zsh/utils.zsh
+safe_source $ZSH/oh-my-zsh.sh
 
 # compdef
 #
@@ -47,6 +51,7 @@ compdef _act_venv act_venv rm_venv
 compdef _git ga=git-add
 compdef _git gc=git-commit
 compdef _git gp=git-push
+compdef _git gpp=git-pull
 compdef _git gf=git-fetch
 compdef _git gck=git-checkout
 compdef _git gb=git-branch
