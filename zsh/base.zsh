@@ -130,6 +130,16 @@ src() {
     echo "$func_code"
 }
 
+_src() {
+  local completions
+
+  # Collect all aliases and functions and store them in the 'completions' array
+  completions=(${(k)aliases} ${(k)functions})
+
+  # Generate completions using the _values function
+  _values 'src completions' $completions
+}
+
 mvp() {
     # Function to rename only the prefix of a file
     # example usage: mvp /path/a.txt b
@@ -210,7 +220,6 @@ env_get()
     fi
     echo "$env_value"
 }
-
 
 pck()
 {

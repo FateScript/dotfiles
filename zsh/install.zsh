@@ -57,12 +57,23 @@ install_zsh_syntax_highlight()
     fi
 }
 
+install_zsh_fzf_tab()
+{
+    local fzf_tab_path="${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab"
+    if [ -d "$fzf_tab_path" ]; then
+        echo "fzf-tab already installed"
+    else
+        git clone https://github.com/Aloxaf/fzf-tab  $fzf_tab_path
+    fi
+}
+
 install_ohmyzsh()
 {
     sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
     install_zsh_autosuggest
     install_zsh_syntax_highlight
     install_zsh_autojump
+    install_zsh_fzf_tab
 }
 
 update_conf()

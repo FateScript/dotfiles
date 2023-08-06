@@ -1,4 +1,3 @@
-
 VENV_DIR="$HOME/workspace/env"
 
 create_venv()

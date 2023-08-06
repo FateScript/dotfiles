@@ -1,5 +1,7 @@
 # some utilities
 
+autoload -U compinit && compinit -u
+
 safe_source()
 {
     [ -f  "$1" ] && source "$1"
@@ -23,6 +25,7 @@ plugins=(
     autojump
     zsh-autosuggestions
     zsh-syntax-highlighting
+    fzf-tab
 )
 
 [ "$OS_DISTRIBUTION" = 'ubuntu' ] && source /usr/share/autojump/autojump.sh
@@ -40,14 +43,14 @@ bindkey '^B' backward-word  # Bind Ctrl + B to backward-word
 # }
 
 # alias and self defined function
-safe_source $HOME/.zsh/alias.zsh
 safe_source $HOME/.zsh/utils.zsh
 safe_source $ZSH/oh-my-zsh.sh
 
 # compdef
-#
+compdef _src src
 compdef _conf conf
 compdef _act_venv act_venv rm_venv
+
 compdef _git ga=git-add
 compdef _git gc=git-commit
 compdef _git gp=git-push
