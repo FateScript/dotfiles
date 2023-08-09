@@ -313,3 +313,42 @@ rerun_check()
     done
     timelog "total count:" $count
 }
+
+line()
+{
+    # Usage: line <file> <line_number>
+    local file="$1"
+    local line_number="$2"
+    sed -n "${line_number}p" "$file"
+}
+
+p() {
+    # Execute the previous commands. Useage: p <number> or p
+    local num=${1:-1}  # Get the input argument or default to 1
+    if ! [[ $num =~ ^[0-9]+$ ]]; then
+        num=1  # Fallback to 1 if the input is not a number
+    fi
+    local commands=()
+
+    # Loop through history in reverse to find the last non-'p' and non-'clear' commands
+    for (( i = 1; i <= HISTCMD; i++ )); do
+        local cmd=$(history -n -$i | head -n 1 | sed -E 's/^[[:space:]]*[0-9]+[[:space:]]+//')
+        if ! [[ $cmd =~ ^p\ + || $cmd == "p" || $cmd == "clear" ]]; then
+            commands=($cmd "${commands[@]}")
+            if [[ ${#commands[@]} -eq $num ]]; then
+                break
+            fi
+        fi
+    done
+
+    # If non-'p' and non-'clear' commands are found, execute them
+    if [[ ${#commands[@]} -gt 0 ]]; then
+        timelog "Executing previous $num commands."
+        for cmd in "${commands[@]}"; do
+            timelog "Executing: $cmd"
+            eval $cmd
+        done
+    else
+        warnlog "No previous commands found."
+    fi
+}
