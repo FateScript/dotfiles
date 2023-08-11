@@ -53,7 +53,7 @@
     },
     // ctrl+a hotkeys
     // ctrl+a h to switch focus between sidebar and editor
-    // h and l are used in vim
+    // h and l are used in vim, h for left and l for right
     {
         "key": "ctrl+a h",
         "command": "workbench.action.focusSideBar",
@@ -64,7 +64,6 @@
         "command": "workbench.action.focusActiveEditorGroup",
         "when": "sideBarFocus && vim.active"
     },
-    // ctrl+a l to switch focus between sidebar and editor
     {
         "key": "ctrl+a l",
         "command": "workbench.action.focusSideBar",
@@ -103,7 +102,7 @@
     {
         "key": "enter",
         "command": "search.focus.nextInputBox",
-        "when": "inSearchEditor && inputBoxFocus || inputBoxFocus && searchViewletVisible"
+        "when": "(inSearchEditor && inputBoxFocus) || (inputBoxFocus && searchViewletVisible)"
     },
     // unbind renameFile command and using enter to open file
     {
@@ -116,7 +115,12 @@
         "command": "list.select",
         "when": "explorerViewletVisible && filesExplorerFocus"
     },
-    // cmd+enter to open file on the right
+    {
+        "key": "r",
+        "command": "renameFile",
+        "when": "explorerViewletVisible && filesExplorerFocus"
+    },
+    // cmd+enter to open file to the side
     {
         "key": "cmd+enter",
         "command": "explorer.openToSide",
@@ -140,5 +144,21 @@
         "key": "cmd+e",
         "command": "-workbench.action.toggleSidebarVisibility",
         "when": "explorerViewletVisible"
+    },
+    {
+        "key": "ctrl+a m",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                "markdown.showPreviewToSide",
+                "workbench.action.focusPreviousGroup"
+            ]
+        },
+        "when": "editorTextFocus && editorLangId == 'markdown'"
+    },
+    {
+        "key": "ctrl+a x",
+        "command": "workbench.action.closeEditorsInOtherGroups",
+        "when": "editorTextFocus"
     }
 ]

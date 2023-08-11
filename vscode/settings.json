@@ -8,14 +8,14 @@
     "vim.hlsearch": true,
     "vim.leader": "<space>",
     "vim.handleKeys": {
-      "<C-a>": false,
+      "<C-a>": false
     },
     "vim.insertModeKeyBindings": [
         {
           // map jj to ESC to exit insert mode 
           "before": ["j", "j"],
-          "after": ["<Esc>"],
-        },
+          "after": ["<Esc>"]
+        }
     ],
     "vim.normalModeKeyBindingsNonRecursive": [
       // FIX https://github.com/VSCodeVim/Vim/issues/8157#issuecomment-1426704638
@@ -29,36 +29,36 @@
         "before": ["R"],
         "commands": ["workbench.action.nextEditor"],
         "when": "editorTextFocus",
-        "silent": true,
+        "silent": true
       },
       {
         // E / shift+e to prevTab like Surfingkeys
         "before": ["E"],
         "commands": ["workbench.action.previousEditor"],
         "when": "editorTextFocus",
-        "silent": true,
+        "silent": true
       },
       {
         // goto definition with ctrl + f in normal mode
         "before": ["C-f"],
         "commands": ["editor.action.revealDefinition"],
         "when": "editorTextFocus",
-        "silent": true,
+        "silent": true
       },
       {
         // <Learder> + cn go to next error 
         "before": ["<Leader>", "c", "n"],
         "commands": ["editor.action.marker.nextInFiles"],
         "when": "editorTextFocus",
-        "silent": true,
+        "silent": true
       },
       {
         // <Leader> + cp go to pervious error 
         "before": ["<Leader>", "c", "p"],
         "commands": ["editor.action.marker.prevInFiles"],
         "when": "editorTextFocus",
-        "silent": true,
-      },
+        "silent": true
+      }
     ],
     // open with full screen
     "window.restoreFullscreen": true,
@@ -82,7 +82,7 @@
       "yzhang.markdown-all-in-one": ["ui"],
       "ms-vscode-remote.remote-ssh": ["ui"],
       "vscodevim.vim": ["ui"],
-      "streetsidesoftware.code-spell-checker": ["ui"],
+      "streetsidesoftware.code-spell-checker": ["ui"]
     },
     // linter
     "python.linting.flake8Enabled": true,
@@ -125,5 +125,5 @@
     ],
     "[python]": {
       "editor.formatOnType": true
-    },
+    }
 }
