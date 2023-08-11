@@ -75,7 +75,6 @@
       "ms-vscode.cpptools": ["workspace"],
       "eamodio.gitlens": ["workspace"],
       // local plugin
-      "njpwerner.autodocstring": ["ui"],
       "GitHub.copilot": ["ui"],
       "github.copilot-labs": ["ui"],
       "James-Yu.latex-workshop": ["ui"],
@@ -87,8 +86,9 @@
     },
     // linter
     "python.linting.flake8Enabled": true,
-    // docstring setting
-    "autoDocstring.docstringFormat": "google",
+    "python.linting.flake8Args": [
+        "--max-line-length=100"
+    ],
     "security.workspace.trust.untrustedFiles": "open",
     "workbench.startupEditor": "none",
     "github.copilot.enable": {

@@ -27,10 +27,7 @@ OS_DISTRIBUTION=$(get_os_distribution)
 OS_VERSION=$(get_os_version)
 PATH_CKPT="$HOME"
 
-safe_source()
-{
-    [ -f  "$1" ] && source "$1"
-}
+safe_source() { [ -f  "$1" ] && source "$1" }
 
 timelog()
 {
@@ -39,10 +36,7 @@ timelog()
     echo -e "\033[32m$now\033[0m" "$@"
 }
 
-warnlog()
-{
-    echo -e "\033[31m$@\033[0m"
-}
+warnlog() { echo -e "\033[31m$@\033[0m" }
 
 ensure_dir()
 {
@@ -68,10 +62,7 @@ updir()
     fi
 }
 
-cdw()
-{
-    cd $(updir $(which $1))
-}
+cdw() { cd $(updir $(which $1)) }
 
 cdfzf()
 {
@@ -221,15 +212,9 @@ env_get()
     echo "$env_value"
 }
 
-pck()
-{
-    export PATH_CKPT=`pwd`
-}
+pck() { export PATH_CKPT=`pwd` }
 
-jck()
-{
-    cd $PATH_CKPT
-}
+jck() { cd $PATH_CKPT }
 
 vf()
 {
@@ -261,10 +246,7 @@ rgopen()
     fi
 }
 
-_conf()
-{
-	_arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins conda)'
-}
+_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins conda)' }
 
 conf()
 {

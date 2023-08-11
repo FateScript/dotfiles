@@ -1,11 +1,9 @@
 # some utilities
 
-safe_source()
-{
-    [ -f  "$1" ] && source "$1"
-}
+safe_source() { [ -f  "$1" ] && source "$1" }
 
 export ZSH="$HOME/.oh-my-zsh"
+export FZF_DEFAULT_OPTS='--bind ctrl-d:page-down,ctrl-u:page-up'  # like vim
 setopt complete_aliases  # enable alias completion
 
 # Set name of the theme to load --- if set to "random", it will
