@@ -1,10 +1,7 @@
 
 autoload -U compinit && compinit -u
 
-safe_source()
-{
-    [ -f  "$1" ] && source "$1"
-}
+safe_source() { [ -f  "$1" ] && source "$1" }
 
 safe_source $HOME/.zsh/alias.zsh
 safe_source $HOME/.zsh/base.zsh

@@ -334,3 +334,29 @@ p() {
         warnlog "No previous commands found."
     fi
 }
+
+# ANSI escape code related functions
+# learn more at https://en.wikipedia.org/wiki/ANSI_escape_code
+
+clip() {
+    # Copy the input to the clipboard
+    # Example usage: clip "Hello World" and check your clipboard
+    printf "\e]52;c;$(echo $@ | base64)\a"
+}
+
+_clip_helper()
+{
+    # make clip used as a pipe
+    local input=$(cat)
+    clip $input
+}
+
+clip_path()
+{
+    local file=$1
+    # if $1 is not given, use the current file of command
+    if [ -z $file ]; then
+        file="."
+    fi
+    clip `realpath $file`
+}

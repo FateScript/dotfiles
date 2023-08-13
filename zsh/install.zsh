@@ -143,6 +143,7 @@ install_tools()
     os_install jq
     os_install shellcheck
     os_install axel
+    os_install timg
     # install_ag
     install_rg
     install_fzf

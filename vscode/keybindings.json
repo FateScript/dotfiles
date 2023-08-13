@@ -98,6 +98,37 @@
         "command": "workbench.action.terminal.focus",
         "when": "editorTextFocus"
     },
+    // ctrl+a n to show preview, n short for navigator
+    // markdown preview
+    {
+        "key": "ctrl+a n",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                "markdown.showPreviewToSide",
+                "workbench.action.focusPreviousGroup"
+            ]
+        },
+        "when": "editorTextFocus && editorLangId == 'markdown'"
+    },
+    // latex preview
+    {
+        "key": "ctrl+a n",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                "latex-workshop.build",
+                "latex-workshop.view",
+                "workbench.action.focusPreviousGroup"
+            ]
+        },
+        "when": "editorTextFocus && editorLangId == 'latex'"
+    },
+    {
+        "key": "ctrl+a x",
+        "command": "workbench.action.closeEditorsInOtherGroups",
+        "when": "editorTextFocus"
+    },
     // press cmd + shift + F, enter to go to input, then j and k could be used to focus up and down. 
     {
         "key": "enter",
@@ -144,21 +175,5 @@
         "key": "cmd+e",
         "command": "-workbench.action.toggleSidebarVisibility",
         "when": "explorerViewletVisible"
-    },
-    {
-        "key": "ctrl+a m",
-        "command": "runCommands",
-        "args": {
-            "commands": [
-                "markdown.showPreviewToSide",
-                "workbench.action.focusPreviousGroup"
-            ]
-        },
-        "when": "editorTextFocus && editorLangId == 'markdown'"
-    },
-    {
-        "key": "ctrl+a x",
-        "command": "workbench.action.closeEditorsInOtherGroups",
-        "when": "editorTextFocus"
     }
 ]

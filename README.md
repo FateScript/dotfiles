@@ -54,7 +54,12 @@ Install and configure tmux.
 prepare_tmux
 ```
 
-### Useful tools like [ranger](https://github.com/ranger/ranger), [ripgrep](https://github.com/BurntSushi/ripgrep), [fzf](https://github.com/junegunn/fzf), etc.
+### Useful tools 
+
+* [ranger](https://github.com/ranger/ranger)
+* [ripgrep](https://github.com/BurntSushi/ripgrep)
+* [fzf](https://github.com/junegunn/fzf)
+* [timg](https://github.com/hzeller/timg)
 
 ```shell
 install_tools

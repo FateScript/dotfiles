@@ -39,8 +39,8 @@ bindkey '^B' backward-word  # Bind Ctrl + B to backward-word
 # }
 
 # alias and self defined function
-safe_source $HOME/.zsh/utils.zsh
 safe_source $ZSH/oh-my-zsh.sh
+safe_source $HOME/.zsh/utils.zsh
 
 # ssh-agent {
 #

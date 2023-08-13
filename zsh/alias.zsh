@@ -4,6 +4,7 @@ alias -g JL="| jq | less"
 alias -g CL="| pygmentize | less"
 alias -g G="| grep"
 alias -g X="| xargs"
+alias -g C="| _clip_helper"
 
 alias m="make"
 
