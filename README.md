@@ -59,7 +59,7 @@ prepare_tmux
 * [ranger](https://github.com/ranger/ranger)
 * [ripgrep](https://github.com/BurntSushi/ripgrep)
 * [fzf](https://github.com/junegunn/fzf)
-* [timg](https://github.com/hzeller/timg)
+* [timg](https://github.com/hzeller/timg) or [imgcat](https://github.com/wookayin/python-imgcat)
 
 ```shell
 install_tools
