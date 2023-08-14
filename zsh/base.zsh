@@ -341,12 +341,17 @@ p() {
 clip() {
     # Copy the input to the clipboard
     # Example usage: clip "Hello World" and check your clipboard
-    printf "\e]52;c;$(echo $@ | base64)\a"
+    if hash pbcopy 2>/dev/null; then
+        echo "$@" | pbcopy
+    else
+        printf "\e]52;c;$(echo $@ | base64)\a"
+    fi
 }
 
 _clip_helper()
 {
     # make clip used as a pipe
+    # NOTE: pbcopy could do the same thing, but I will still keep this function
     local input=$(cat)
     clip $input
 }
