@@ -64,3 +64,11 @@ prepare_tmux
 ```shell
 install_tools
 ```
+
+### VSCode
+Highly recommend to use [vscode](https://code.visualstudio.com/) + [vim plugin](https://marketplace.visualstudio.com/items?itemName=vscodevim.vim) as your working IDE.
+
+For more settings, please refer to [vscode config](vscode/README.md)
+
+### Surfingkeys
+[Surfingkeys](https://github.com/brookhong/Surfingkeys) is a chrome extension that provides vim-like keybindings in chrome.
