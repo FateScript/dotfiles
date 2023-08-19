@@ -44,3 +44,14 @@ git_clean_branch()
     git remote prune $origin
     git branch --merged | egrep -v "(^\*|main)" | xargs git branch -d
 }
+
+cdp() {
+    # cd to git repo root or PWD
+    local dir=$(git rev-parse --show-toplevel 2>/dev/null)
+    if [ $? -eq 0 ]; then
+        CDP=$dir
+        cd $dir
+    else
+        cd "$PWD"  # Refresh in case of remounts
+    fi
+}

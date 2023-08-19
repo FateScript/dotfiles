@@ -53,6 +53,22 @@ join_paths() {
     echo "$joined_path"
 }
 
+compress_dir() {
+    # usage: compress_dir <dir>
+    if [[ ! -d $1 ]]; then
+        echo "$1 is not a directory"
+        exit
+    fi
+    local name=$1
+    tar czvf ${name%/}.tgz $1 && rm -rf $1
+}
+
+sdu () {
+    # human-readable sorted du
+    [[ "$#" -eq 1 && -d "$1" ]] && cd "$1"
+    du -sh {*,.*} | sort -h
+}
+
 updir()
 {
     if [[ -z "$1" ]]; then

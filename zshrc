@@ -1,6 +1,7 @@
 # some utilities
 
-safe_source() { [ -f  "$1" ] && source "$1" }
+function safe_source() { [ -f  "$1" ] && source "$1" }
+function safe_export_path() { [[ -d $1 ]] && export PATH=$1:$PATH }
 
 export ZSH="$HOME/.oh-my-zsh"
 export FZF_DEFAULT_OPTS='--bind ctrl-d:page-down,ctrl-u:page-up'  # like vim

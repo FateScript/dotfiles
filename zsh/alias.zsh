@@ -1,9 +1,15 @@
 # aliases {
+
+# global aliases
 alias -g L="| less"
 alias -g JL="| jq | less"
 alias -g CL="| pygmentize | less"
 alias -g G="| grep"
 alias -g X="| xargs"
+alias -g B='|sed -r "s:\x1B\[[0-9;]*[mK]::g"'       # remove color, make things boring
+alias -g N='>/dev/null'
+alias -g NN='>/dev/null 2>&1'
+alias -g F="| fzf"
 alias -g C="| pbcopy"
 
 alias m="make"
@@ -18,6 +24,7 @@ alias pip3="python3 -m pip "
 alias pip="python -m pip "
 
 alias rf="readlink -f"
+alias printurl=$'printf \'\e]8;;%s\e\\%s\e]8;;\e\\\n\''
 
 alias findname="find . -name"
 alias show_cursor="echo -e '\033[?25h'"
