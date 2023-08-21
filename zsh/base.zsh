@@ -27,8 +27,6 @@ OS_DISTRIBUTION=$(get_os_distribution)
 OS_VERSION=$(get_os_version)
 PATH_CKPT="$HOME"
 
-safe_source() { [ -f  "$1" ] && source "$1" }
-
 timelog()
 {
     # log related function with timestamp
@@ -60,25 +58,18 @@ compress_dir() {
         exit
     fi
     local name=$1
-    tar czvf ${name%/}.tgz $1 && rm -rf $1
+    # tar czvf ${name%/}.tgz $1 && rm -rf $1
+    tar czvf ${name%/}.tgz $1
 }
 
 sdu () {
     # human-readable sorted du
-    [[ "$#" -eq 1 && -d "$1" ]] && cd "$1"
+    [[ "$#" -eq 1 && -d "$1" ]] && pushd "$1"
     du -sh {*,.*} | sort -h
+    popd
 }
 
-updir()
-{
-    if [[ -z "$1" ]]; then
-        echo $(dirname $PWD)
-    else
-        echo ${1%/*}
-    fi
-}
-
-cdw() { cd $(updir $(which $1)) }
+cdw() { cd $(dirname $(which $1)) }
 
 cdfzf()
 {
@@ -86,7 +77,7 @@ cdfzf()
     if [[ -z "$file" ]]; then
         return
     fi
-    cd $(updir $(realpath $file))
+    cd $(dirname $(realpath $file))
 }
 
 swap_file()
@@ -138,13 +129,13 @@ src() {
 }
 
 _src() {
-  local completions
+    local completions
 
-  # Collect all aliases and functions and store them in the 'completions' array
-  completions=(${(k)aliases} ${(k)functions})
+    # Collect all aliases and functions and store them in the 'completions' array
+    completions=(${(k)aliases} ${(k)functions})
 
-  # Generate completions using the _values function
-  _values 'src completions' $completions
+    # Generate completions using the _values function
+    _values 'src completions' $completions
 }
 
 mvp() {
