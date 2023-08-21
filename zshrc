@@ -5,6 +5,9 @@ function safe_export_path() { [[ -d $1 ]] && export PATH=$1:$PATH }
 
 export ZSH="$HOME/.oh-my-zsh"
 export FZF_DEFAULT_OPTS='--bind ctrl-d:page-down,ctrl-u:page-up'  # like vim
+# enable gruvbox work in vimrc
+export TERM=xterm-256color
+
 setopt complete_aliases  # enable alias completion
 
 # Set name of the theme to load --- if set to "random", it will
@@ -27,21 +30,14 @@ plugins=(
 
 [ "$OS_DISTRIBUTION" = 'ubuntu' ] && source /usr/share/autojump/autojump.sh
 
-# enable gruvbox work in vimrc
-export TERM=xterm-256color
-
-# key bindings {
-# default beginning-of-line is ctrl-a, which conflicted with keybinding ctrl-a
-# used in tmux. 
-bindkey '^D' beginning-of-line  # Bind Ctrl + D to beginning-of-line
-bindkey '^F' forward-word  # Bind Ctrl + F to forward-word
-bindkey '^B' backward-word  # Bind Ctrl + B to backward-word
-
-# }
-
 # alias and self defined function
 safe_source $ZSH/oh-my-zsh.sh
-safe_source $HOME/.zsh/utils.zsh
+for file in $HOME/.zsh/*.zsh; do
+    source $file
+done
+
+[[ -d $HOME/.zsh/Completion ]] && fpath=($HOME/.zsh/Completion $fpath)
+[[ -d $HOME/.zsh/functions ]] && fpath=($HOME/.zsh/functions $fpath)
 
 # ssh-agent {
 #
@@ -49,7 +45,7 @@ safe_source $HOME/.zsh/utils.zsh
 
 if [ "$OS_DISTRIBUTION" = "arch" ]; then
 	if ! pgrep -u $USER ssh-agent > /dev/null; then
-	    [ -d ~/.config ] || mkdir -v ~/.config
+	    [ -d "$HOME"/.config ] || mkdir -v "$HOME"/.config
 	    ssh-agent > ~/.config/ssh-agent-thing
 	    echo "ssh-agent started"
 	fi
@@ -58,9 +54,8 @@ fi
 
 # }
 
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-[ -f ~/.zsh_additional ] && source ~/.zsh_additional
+safe_source "$HOME"/.fzf.zsh
+safe_source "$HOME"/.zsh.local  # local file is used to store local configuration
 
 # Activate virtual env and save the path as a tmux variable,
 # so that new panes/windows can re-activate as necessary

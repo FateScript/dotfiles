@@ -16,15 +16,18 @@ alias m="make"
 
 alias sv="sudo vim"
 alias vi="vim"
-alias v=vim
+alias v="vim"
 alias c="cat"
+alias icat="imgcat"
+
+# Pretty print the path
+alias path='echo $PATH | tr -s ":" "\n"'
 
 alias ip3="python3 -c 'import IPython; IPython.terminal.ipapp.launch_new_instance()'"
 alias pip3="python3 -m pip "
 alias pip="python -m pip "
 
 alias rf="readlink -f"
-alias printurl=$'printf \'\e]8;;%s\e\\%s\e]8;;\e\\\n\''
 
 alias findname="find . -name"
 alias show_cursor="echo -e '\033[?25h'"

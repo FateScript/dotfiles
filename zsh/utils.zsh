@@ -1,15 +1,6 @@
 
 autoload -U compinit && compinit -u
 
-safe_source() { [ -f  "$1" ] && source "$1" }
-
-safe_source $HOME/.zsh/alias.zsh
-safe_source $HOME/.zsh/base.zsh
-safe_source $HOME/.zsh/install.zsh
-safe_source $HOME/.zsh/git.zsh
-safe_source $HOME/.zsh/venv.zsh
-safe_source $HOME/.zsh/device.zsh
-
 # compdef
 compdef _src src
 compdef _conf conf
@@ -24,3 +15,11 @@ compdef _git gf=git-fetch
 compdef _git gck=git-checkout
 compdef _git gb=git-branch
 compdef _git gr=git-remote
+
+# specific filetype
+_pic() { _files -g '*.(jpg|png|bmp|gif|ppm|pbm|jpeg|xcf|ico)(-.)' }
+compdef _pic gimp
+compdef _pic imgcat
+compdef _pic feh
+compdef _pip pip2
+compdef _pip pip3

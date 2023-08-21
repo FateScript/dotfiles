@@ -78,6 +78,10 @@ install_ohmyzsh()
 
 update_conf()
 {
+    if ! [ -f "tmux.conf" ]; then
+        echo "update_conf should be executed under the dofile dir."
+        return
+    fi
     cp tmux.conf $HOME/.tmux.conf
     if [ -d $HOME/.zsh ]; then
         echo "remove ~/.zsh dir"
@@ -85,6 +89,7 @@ update_conf()
     fi
     cp zshrc $HOME/.zshrc
     cp -r zsh $HOME/.zsh
+    echo "update configure of zsh & tmux done"
 }
 
 install_fzf()
@@ -103,7 +108,7 @@ install_fzf()
         echo "fzf already installed"
     else
         git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-        ~/.fzf/install
+        "$HOME"/.fzf/install
     fi
 }
 
@@ -121,10 +126,7 @@ install_ranger()
     fi
 }
 
-install_rg()
-{
-    os_install ripgrep
-}
+install_rg() { os_install ripgrep }
 
 install_fd()
 {

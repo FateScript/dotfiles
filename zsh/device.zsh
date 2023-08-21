@@ -1,5 +1,4 @@
 
-
 bluetooth_conn()
 {
     local device_name=$1
