@@ -5,7 +5,7 @@ autoload -U compinit && compinit -u
 compdef _src src
 compdef _conf conf
 compdef _act_venv act_venv rm_venv
-compdef _bluetooth_device bluetooth_conn
+compdef _bluetooth_device bluetooth_conn bluetooth_disconn
 
 compdef _git ga=git-add
 compdef _git gc=git-commit

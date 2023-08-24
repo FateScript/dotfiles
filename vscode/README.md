@@ -63,3 +63,23 @@ The philosophy of my keybindings is to use the same intuition of keybindings as 
 - [latex-workshop](https://marketplace.visualstudio.com/items?itemName=James-Yu.latex-workshop)
 - [markdown](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one)
 - [C/C++](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools)
+
+### Extensions
+
+#### Frome the Command Palette
+* press the “Ctrl + Shift + P” shortcut to access the Command Palette.
+* Type “extensions” in the search bar and select the specific extensions.json file.
+* Copy and paste the extensions.json file into the user settings file.
+
+
+#### From terminal
+
+Save the extenstions to a file (vscode_ext.txt)
+```shell
+code --list-extensions > vscode_ext.txt
+```
+
+Install the extensions from the file
+```shell
+cat vscode_ext.txt | xargs -L 1 code --install-extension
+```
