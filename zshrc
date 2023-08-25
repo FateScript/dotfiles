@@ -1,7 +1,18 @@
 # some utilities
 
 function safe_source() { [ -f  "$1" ] && source "$1" }
-function safe_export_path() { [[ -d $1 ]] && export PATH=$1:$PATH }
+# function safe_export_path() { [[ -d $1 ]] && export PATH=$1:$PATH }
+function safe_add_fpath() { [[ -d "$1" ]] && fpath=("$1" $fpath) }  # NOTE: don't quote fpath here
+function safe_export_path() {
+    if [[ -d "$1" ]]; then
+        if [[ ":$PATH:" == *":$1:"* ]]; then
+            echo "$1 already exists in PATH"
+        else
+            export PATH="$1:$PATH"
+        fi
+    fi
+}
+
 
 export ZSH="$HOME/.oh-my-zsh"
 export FZF_DEFAULT_OPTS='--bind ctrl-d:page-down,ctrl-u:page-up'  # like vim
@@ -31,13 +42,14 @@ plugins=(
 [ "$OS_DISTRIBUTION" = 'ubuntu' ] && source /usr/share/autojump/autojump.sh
 
 # alias and self defined function
+safe_export_path $HOME/.local/bin
 safe_source $ZSH/oh-my-zsh.sh
 for file in $HOME/.zsh/*.zsh; do
     source $file
 done
 
-[[ -d $HOME/.zsh/Completion ]] && fpath=($HOME/.zsh/Completion $fpath)
-[[ -d $HOME/.zsh/functions ]] && fpath=($HOME/.zsh/functions $fpath)
+safe_add_fpath "$HOME/.zsh/Completion"
+safe_add_fpath "$HOME/.zsh/functions"
 
 # ssh-agent {
 #

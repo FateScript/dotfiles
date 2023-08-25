@@ -232,17 +232,6 @@ vf()
     vim $file
 }
 
-agopen()
-{
-    # use ag to search the content and open the file
-    local file_lino="$(ag --filename $1 | fzf | awk -F '[:]' '{print $1, $2}')"
-    if [ ! -z "$file_lino" ]; then
-        local file="$(echo "$file_lino" | awk -F '[  ]' '{print $1}')"
-        local lino="$(echo "$file_lino" | awk -F '[  ]' '{print $2}')"
-        echo -e "+$lino $file" | xargs -o vim
-    fi
-}
-
 rgopen()
 {
     local file_lino="$(rg $1 -n | fzf | awk -F '[:]' '{print $1, $2}')"
@@ -265,7 +254,6 @@ conf()
 		zsh)		vim $HOME/.zshrc ;;
 		zshbase)    vim $HOME/.zsh/base.zsh ;;
 		zshal)      vim $HOME/.zsh/alias.zsh ;;
-		zshins)     vim $HOME/.zsh/install.zsh ;;
         conda)      vim $HOME/.condarc ;;
 		*)		echo "Unknown application $1" ;;
 	esac
@@ -371,4 +359,30 @@ clip_path()
         file="."
     fi
     clip `realpath $file`
+}
+
+dedup_path() {
+    # dedup dir variable of path env
+    local dedup_path=""
+    for prev_path in `echo $PATH | tr -s ":" "\n"`; do
+        if [[ ":$dedup_path:" != *":$prev_path:"* ]]; then
+            [[ -z "$dedup_path" ]] && dedup_path="$prev_path" || dedup_path="$dedup_path:$prev_path"
+        else
+            echo "dup path:" $prev_path
+        fi
+    done
+    export PATH="$dedup_path"
+}
+
+remove_path() {
+    # rm dir variable of path env
+    local new_path=""
+    for prev_path in `echo $PATH | tr -s ":" "\n"`; do
+        if [[ "$prev_path" != "$1" ]]; then
+            [[ -z "$new_path" ]] && new_path="$prev_path" || new_path="$new_path:$prev_path"
+        else
+            echo "rm" $prev_path "from PATH"
+        fi
+    done
+    export PATH="$new_path"
 }

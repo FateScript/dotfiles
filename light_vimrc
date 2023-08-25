@@ -155,8 +155,6 @@ nnoremap <c-p> :Files<cr>
 "Python File Head
 function HeaderPython()
     call setline(1, "#!/usr/bin/env python3")
-    call append(1, "# -*- coding:utf-8 -*-")
-    "call append(2, "# author:Wang Feng" . strftime('%Y-%m-%d %T', localtime()))
     normal G
     normal o
     normal o

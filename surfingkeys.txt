@@ -30,3 +30,5 @@ settings.theme = `
 #sk_status, #sk_find {
     font-size: 20pt;
 }`;
+// hotkey must be one keystroke with/without modifier, it can not be a sequence of keystrokes like `gg`.
+api.map('<Ctrl-i>', '<Alt-s>');  // ctrl + i to toggle settings
