@@ -33,6 +33,10 @@ The philosophy of my keybindings is to use the same intuition of keybindings as 
 * `Cmd + P` to open a file of the current project
 * `Cmd + Shift + P` to open the vscode command palette
 * `Cmd + J` to toggle the terminal window
+* `Cmd + J` to the next sidebar view (when foucs on sidebar / quickopen)
+* `Cmd + K` to the previous sidebar view (when foucs on sidebar / quickopen)
+* `Cmd + H` to the previous panel view (when foucs on panel)
+* `Cmd + L` to the next panel view (when foucs on panel)
 * `Cmd + E` to toggle the file explorer
 * `Cmd + Shift + F` to search text in the current project,
  and after pressing `Enter`, you could use `j`/`k` to move up/down in the search result.
@@ -41,12 +45,11 @@ The philosophy of my keybindings is to use the same intuition of keybindings as 
 ##### Ctrl+a hotkey tutorial
 * `Ctrl+a cmd+v` to toggle Vim extension
 * `Ctrl+a t` to focus on the terminal
-* `Ctrl+a p` to check the problems of the current file
 * `Ctrl+a c` to compare the current file with the selected file
 * `Ctrl+a h/l` to switch focus between text editor and file explorer
-* `Ctrl+a n` to display markdown/latex preview in other groups
+* `Ctrl+a p` to display markdown/latex preview in other groups
 * `Ctrl+a x` to close text editor in other groups, useful when you splited windows and close it.
- Could combine with `Ctrl+a n` to close the splited preview window
+ Could combine with `Ctrl+a p` to close the splited preview window
 
 ### Plugins
 

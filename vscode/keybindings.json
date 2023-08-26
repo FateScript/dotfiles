@@ -86,22 +86,16 @@
         "command": "workbench.files.action.focusFilesExplorer",
         "when": "textInputFocus || sideBarFocus"
     },
-    // ctrl+a p to focus problem, p means problem
-    {
-        "key": "ctrl+a p",
-        "command": "workbench.actions.view.problems",
-        "when": "editorTextFocus && vim.active"
-    },
     // ctrl+a t to focus terminal, t means terminal
     {
         "key": "ctrl+a t",
         "command": "workbench.action.terminal.focus",
-        "when": "editorTextFocus"
+        "when": "!terminalFocus"
     },
-    // ctrl+a n to show preview, n short for navigator
+    // ctrl+a p to show preview
     // markdown preview
     {
-        "key": "ctrl+a n",
+        "key": "ctrl+a p",
         "command": "runCommands",
         "args": {
             "commands": [
@@ -113,7 +107,7 @@
     },
     // latex preview
     {
-        "key": "ctrl+a n",
+        "key": "ctrl+a p",
         "command": "runCommands",
         "args": {
             "commands": [
@@ -175,5 +169,63 @@
         "key": "cmd+e",
         "command": "-workbench.action.toggleSidebarVisibility",
         "when": "explorerViewletVisible"
+    },
+    // cmd + j/k to select next/previous item in quick open(cmd + p)
+    {
+        "key": "cmd+j",
+        "command": "workbench.action.quickOpenSelectNext",
+        "when": "inQuickOpen"
+    },
+    {
+        "key": "ctrl+n",
+        "command": "-workbench.action.quickOpenSelectNext",
+        "when": "inQuickOpen"
+    },
+    {
+        "key": "cmd+k",
+        "command": "workbench.action.quickOpenSelectPrevious",
+        "when": "inQuickOpen"
+    },
+    {
+        "key": "ctrl+p",
+        "command": "-workbench.action.quickOpenSelectPrevious",
+        "when": "inQuickOpen"
+    },
+    {
+        "key": "cmd+j",
+        "command": "workbench.action.nextSideBarView",
+        "when": "sideBarFocus && vim.active"
+    },
+    {
+        "key": "cmd+k",
+        "command": "workbench.action.previousSideBarView",
+        "when": "sideBarFocus && vim.active"
+    },
+    {
+        "key": "cmd+j",
+        "command": "runCommands",
+        "args": {
+            "commands": [
+                "workbench.action.togglePanel",
+                "workbench.action.terminal.focus"
+            ]
+        },
+        "when": "!panelFocus && !inQuickOpen && !sideBarFocus"
+    },
+    {
+        "key": "cmd+j",
+        "command": "-workbench.action.togglePanel",
+        "when": "panelFocus"
+    },
+    {
+        "key": "cmd+l",
+        "command": "workbench.action.nextPanelView",
+        "when": "panelFocus"
+    },
+    {
+        "key": "cmd+h",
+        "command": "workbench.action.previousPanelView",
+        "when": "panelFocus"
     }
 ]
+
