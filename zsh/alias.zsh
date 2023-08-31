@@ -4,13 +4,31 @@
 alias -g L="| less"
 alias -g JL="| jq | less"
 alias -g CL="| pygmentize | less"
-alias -g G="| grep"
 alias -g X="| xargs"
 alias -g B='|sed -r "s:\x1B\[[0-9;]*[mK]::g"'       # remove color, make things boring
 alias -g N='>/dev/null'
 alias -g NN='>/dev/null 2>&1'
 alias -g F="| fzf"
 alias -g C="| pbcopy"
+
+which rg NN && {
+    alias -g G='| rg'
+    alias ag='rg -i'
+    alias agp='rg -i -tpy'
+} || {
+    which ag NN && {
+        alias -g G='| ag'
+        alias agp='ag --python'
+    } || alias -g G='| grep'
+}
+
+which pbcopy NN && {
+    alias -g C="| pbcopy"
+} || {
+    which xclip NN && {
+        alias -g C='| xclip -selection clipboard'
+    } || alias -g G='| _clip_helper'
+}
 
 alias m="make"
 

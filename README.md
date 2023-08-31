@@ -72,3 +72,9 @@ For more settings, please refer to [vscode config](vscode/README.md)
 
 ### Surfingkeys
 [Surfingkeys](https://github.com/brookhong/Surfingkeys) is a chrome extension that provides vim-like keybindings in chrome.
+
+### Acknowledgement
+
+I refer to the following repos to build my own dotfiles:
+* [dotfiles of kdeldycke](https://github.com/kdeldycke/dotfiles)
+* [dotfiles of ppwwyyxx](https://github.com/ppwwyyxx/dotfiles)

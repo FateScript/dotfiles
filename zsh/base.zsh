@@ -242,7 +242,7 @@ rgopen()
     fi
 }
 
-_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins conda)' }
+_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins conda ssh)' }
 
 conf()
 {
@@ -255,6 +255,7 @@ conf()
 		zshbase)    vim $HOME/.zsh/base.zsh ;;
 		zshal)      vim $HOME/.zsh/alias.zsh ;;
         conda)      vim $HOME/.condarc ;;
+        ssh)        vim $HOME/.ssh/config;;
 		*)		echo "Unknown application $1" ;;
 	esac
 }
@@ -385,4 +386,9 @@ remove_path() {
         fi
     done
     export PATH="$new_path"
+}
+
+pylibinfo() {
+  if [[ -z "$1" ]]; then echo "Usage: pylibinfo libname"; return; fi
+  python -c "import $1 as X; print(X.__file__, end=' '); print(X.__version__)"
 }
