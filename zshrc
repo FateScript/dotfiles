@@ -42,7 +42,7 @@ plugins=(
 [ "$OS_DISTRIBUTION" = 'ubuntu' ] && source /usr/share/autojump/autojump.sh
 
 # alias and self defined function
-safe_export_path $HOME/.local/bin
+safe_export_path $HOME/.local/bin >/dev/null
 safe_source $ZSH/oh-my-zsh.sh
 for file in $HOME/.zsh/*.zsh; do
     source $file

@@ -9,7 +9,6 @@ alias -g B='|sed -r "s:\x1B\[[0-9;]*[mK]::g"'       # remove color, make things 
 alias -g N='>/dev/null'
 alias -g NN='>/dev/null 2>&1'
 alias -g F="| fzf"
-alias -g C="| pbcopy"
 
 which rg NN && {
     alias -g G='| rg'
@@ -27,7 +26,7 @@ which pbcopy NN && {
 } || {
     which xclip NN && {
         alias -g C='| xclip -selection clipboard'
-    } || alias -g G='| _clip_helper'
+    } || alias -g C='| _clip_helper'
 }
 
 alias m="make"
@@ -37,8 +36,9 @@ alias vi="vim"
 alias v="vim"
 alias c="cat"
 alias icat="imgcat"
+alias rp="realpath"
 
-# Pretty print the path
+# pretty print the path
 alias path='echo $PATH | tr -s ":" "\n"'
 
 alias ip3="python3 -c 'import IPython; IPython.terminal.ipapp.launch_new_instance()'"

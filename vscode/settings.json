@@ -1,5 +1,7 @@
 {
-    "python.pythonPath": "/usr/bin/python3",
+    // terminal settings
+    "terminal.integrated.copyOnSelection": true,
+    // "terminal.integrated.rightClickBehavior": "copyPaste",
     "editor.fontSize": 14,
     "workbench.colorTheme": "Gruvbox Dark Hard",
     "editor.lineNumbers": "relative",
@@ -84,6 +86,7 @@
       "vscodevim.vim": ["ui"],
       "streetsidesoftware.code-spell-checker": ["ui"]
     },
+    "remote.SSH.enableRemoteCommand": true,
     // linter
     "python.linting.flake8Enabled": true,
     "python.linting.flake8Args": [
