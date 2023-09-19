@@ -37,6 +37,7 @@ alias v="vim"
 alias c="cat"
 alias icat="imgcat"
 alias rp="realpath"
+alias cn_tz="TZ=Asia/Shanghai date"  # cn time zone
 
 # pretty print the path
 alias path='echo $PATH | tr -s ":" "\n"'
@@ -82,6 +83,7 @@ alias gdown="git reset HEAD"
 
 # tmux alias
 alias ta="tmux a"
+alias tn="tmux new -s"
 
 if [ "$OS_DISTRIBUTION" = "arch" ]; then
 	alias yS="yaourt -S --noconfirm --needed"
