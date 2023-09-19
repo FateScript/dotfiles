@@ -1,5 +1,6 @@
 eamodio.gitlens
 GitHub.copilot
+GitHub.copilot-chat
 James-Yu.latex-workshop
 jdinhlife.gruvbox
 mathematic.vscode-latex

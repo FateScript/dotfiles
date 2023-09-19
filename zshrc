@@ -16,6 +16,7 @@ function safe_export_path() {
 
 export ZSH="$HOME/.oh-my-zsh"
 export FZF_DEFAULT_OPTS='--bind ctrl-d:page-down,ctrl-u:page-up'  # like vim
+export PYTHONBREAKPOINT="ipdb.set_trace"
 # enable gruvbox work in vimrc
 export TERM=xterm-256color
 

@@ -27,8 +27,6 @@ update_conf
 Step1: Move vimrc to $HOME/.vimrc
 ```shell
 mv vimrc $HOME/.vimrc
-# or a lighter configuration with the following command [Suggested]
-mv light_vimrc $HOME/.vimrc
 ```
 
 Step2: Install vim-plug
