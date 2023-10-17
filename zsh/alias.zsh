@@ -69,17 +69,7 @@ alias tarinfo="tar -tf"
 alias tarzip="tar -zcvf"
 alias tarunzip="tar -zxvf"
 
-# git aliases
-alias gs="git status"
-alias ga="git add"
-alias gm="git commit -m"
-alias gp="git push"
-alias gpp="git pull"
-alias gd="git diff"
-alias grm="git rm"
-alias gmv="git mv"
-alias gck="git checkout"
-alias gr="git remote -v"
+# git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more
 alias gdown="git reset HEAD"
 
 # tmux alias

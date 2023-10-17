@@ -42,7 +42,8 @@ plugins=(
     docker-compose
 )
 
-[ "$OS_DISTRIBUTION" = 'ubuntu' ] && source /usr/share/autojump/autojump.sh
+# to workaround docker.plugin.zsh settings
+cp $ZSH/plugins/docker/completions/_docker $ZSH_CACHE_DIR/completions/_docker
 
 # alias and self defined function
 safe_export_path $HOME/.local/bin >/dev/null

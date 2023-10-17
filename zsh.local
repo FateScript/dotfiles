@@ -1,0 +1,3 @@
+# .zsh.local will not be updated with `update_conf` command
+# to workaround docker issue
+cp "$ZSH/plugins/docker/completions/_docker" "$ZSH_CACHE_DIR/completions"
