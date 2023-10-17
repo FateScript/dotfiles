@@ -13,8 +13,6 @@ function safe_export_path() {
     fi
 }
 
-
-export ZSH="$HOME/.oh-my-zsh"
 export FZF_DEFAULT_OPTS='--bind ctrl-d:page-down,ctrl-u:page-up'  # like vim
 export PYTHONBREAKPOINT="ipdb.set_trace"
 # enable gruvbox work in vimrc
@@ -41,9 +39,6 @@ plugins=(
     docker
     docker-compose
 )
-
-# to workaround docker.plugin.zsh settings
-cp $ZSH/plugins/docker/completions/_docker $ZSH_CACHE_DIR/completions/_docker
 
 # alias and self defined function
 safe_export_path $HOME/.local/bin >/dev/null
