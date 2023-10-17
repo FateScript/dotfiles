@@ -9,6 +9,7 @@ alias -g B='|sed -r "s:\x1B\[[0-9;]*[mK]::g"'       # remove color, make things 
 alias -g N='>/dev/null'
 alias -g NN='>/dev/null 2>&1'
 alias -g F="| fzf"
+alias -g H="--help"
 
 which rg NN && {
     alias -g G='| rg'

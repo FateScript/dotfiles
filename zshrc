@@ -38,6 +38,8 @@ plugins=(
     zsh-autosuggestions
     zsh-syntax-highlighting
     fzf-tab
+    docker
+    docker-compose
 )
 
 [ "$OS_DISTRIBUTION" = 'ubuntu' ] && source /usr/share/autojump/autojump.sh
