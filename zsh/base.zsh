@@ -336,32 +336,13 @@ p() {
 # ANSI escape code related functions
 # learn more at https://en.wikipedia.org/wiki/ANSI_escape_code
 
-clip() {
-    # Copy the input to the clipboard
-    # Example usage: clip "Hello World" and check your clipboard
-    if hash pbcopy 2>/dev/null; then
-        echo "$@" | pbcopy
-    else
-        printf "\e]52;c;$(echo $@ | base64)\a"
-    fi
-}
-
-_clip_helper()
+pipe_clip()
 {
-    # make clip used as a pipe
-    # NOTE: pbcopy could do the same thing, but I will still keep this function
+    # Copy the input to the clipboard, when pbcopy/xclip is not available
+    # Example: echo "hello" | pipe_clip
+    # The terminal should support OSC 52 escape sequence protocol
     local input=$(cat)
-    clip $input
-}
-
-clip_path()
-{
-    local file=$1
-    # if $1 is not given, use the current file of command
-    if [ -z $file ]; then
-        file="."
-    fi
-    clip `realpath $file`
+    printf "\e]52;c;$(echo $input | base64)\a"
 }
 
 dedup_path() {
@@ -393,4 +374,47 @@ remove_path() {
 pylibinfo() {
   if [[ -z "$1" ]]; then echo "Usage: pylibinfo libname"; return; fi
   python -c "import $1 as X; print(X.__file__, end=' '); print(X.__version__)"
+}
+
+function sftp_upload {
+    # sftp_upload <server_name> <local_file_or_directory> [remote_path]
+    # Example usage:
+    # sftp_upload server_name /path/to/local_file_or_directory /path/to/remote_directory
+    # If the remote path is not provided, it will default to login path
+
+    if [[ $# -lt 2 ]]; then
+        echo "Usage: sftp_upload <server_name> <local_file_or_directory> [remote_path]"
+        return 1
+    fi
+
+    local server_name=$1
+    local local_path=$2
+    local remote_path=${3:-""}
+
+    if [[ ! -e $local_path ]]; then
+        echo "Local file or directory does not exist: $local_path"
+        return 1
+    fi
+
+    echo "Uploading $local_path to $server_name:$remote_path"
+
+    # Use sftp to upload the file or directory to the remote server
+    sftp "$server_name" <<EOF
+        put -rf "$local_path" "$remote_path"
+        exit
+EOF
+}
+
+_sftp_upload() {
+    local -a servers
+    servers=($(cat ~/.ssh/config | grep 'Host ' | sed 's/Host //'))
+
+    case $words[2] in
+        (*)
+            _arguments \
+                "1:Server Name:($servers)" \
+                '2:Local File or Directory:_path_files' \
+                '3:Remote Path:_files'
+            ;;
+    esac
 }

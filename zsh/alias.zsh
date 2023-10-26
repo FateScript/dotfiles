@@ -1,4 +1,3 @@
-# aliases {
 
 # global aliases
 alias -g L="| less"
@@ -27,60 +26,68 @@ which pbcopy NN && {
 } || {
     which xclip NN && {
         alias -g C='| xclip -selection clipboard'
-    } || alias -g C='| _clip_helper'
+    } || alias -g C='| pipe_clip'
 }
 
-alias m="make"
-
+# file
+alias 'rm!'="rm -rf"
+alias trm=""  # rm to trash
 alias sv="sudo vim"
 alias vi="vim"
 alias v="vim"
 alias c="cat"
 alias icat="imgcat"
 alias rp="realpath"
-alias cn_tz="TZ=Asia/Shanghai date"  # cn time zone
-
-# pretty print the path
-alias path='echo $PATH | tr -s ":" "\n"'
-
-alias ip3="python3 -c 'import IPython; IPython.terminal.ipapp.launch_new_instance()'"
-alias pip3="python3 -m pip "
-alias pip="python -m pip "
-
 alias rf="readlink -f"
-
 alias findname="find . -name"
-alias show_cursor="echo -e '\033[?25h'"
 
-# alternatives
-alias alter_conf="sudo update-alternatives --config"
-alias alter_install="sudo update-alternatives --install"
-
-# kill process with python, run `pshow python KILL`
-alias pshow="ps -ef | grep"
-alias -g KILL="| awk '{print \$2}' | head -n -1 | xargs kill -9"
-
-# diff dir a and b, run `diffdir a b DIFF`
+## diff dir a and b, run `diffdir a b DIFF`
 alias diffdir="diff --exclude '*.txt' --exclude '*.pkl' --exclude '*__pycache__*'"
 alias -g DIFF="--width=$COLUMNS --suppress-common-lines --side-by-side --recursive"
 
-# tar aliases
+## tar aliases
 alias tarinfo="tar -tf"
 alias tarzip="tar -zcvf"
 alias tarunzip="tar -zxvf"
+
+# system
+alias cn_tz="TZ=Asia/Shanghai date"  # cn time zone
+alias cursor="echo -e '\033[?25h'"
+alias which="which -a"
+alias m="make"
+## pretty print the $PATH
+alias path='echo $PATH | tr -s ":" "\n"'
+
+## alternatives
+alias alter_conf="sudo update-alternatives --config"
+alias alter_install="sudo update-alternatives --install"
+
+# process
+## for example, to kill process with python, run `pshow python KILL`
+alias pshow="ps -ef | grep"
+alias -g KILL="| awk '{print \$2}' | head -n -1 | xargs kill -9"
+
+# sync
+alias scp='scp -r'
+alias rsync='rsync -avP'
+
+# python
+alias ip3="python3 -c 'import IPython; IPython.terminal.ipapp.launch_new_instance()'"
+alias pip3="python3 -m pip "
+alias pip="python -m pip "
+alias pip_tuna="pip install -i https://pypi.tuna.tsinghua.edu.cn/simple"
 
 # git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more
 alias gdown="git reset HEAD"
 
 # tmux alias
-alias ta="tmux a"
+alias ta="tmux a || tmux"
 alias tn="tmux new -s"
 
+# OS specific aliases
 if [ "$OS_DISTRIBUTION" = "arch" ]; then
 	alias yS="yaourt -S --noconfirm --needed"
 	alias ySs="yaourt -Ss"
 	alias pS="sudo pacman -S --noconfirm --needed"
 	alias pSs="sudo pacman -Ss"
 fi
-
-# }
