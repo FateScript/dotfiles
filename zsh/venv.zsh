@@ -21,6 +21,15 @@ _act_venv()
     esac
 }
 
+deact() {
+    if [ -n "$VIRTUAL_ENV" ]; then
+        deactivate
+    fi
+    while [ -n "$CONDA_DEFAULT_ENV" ]; do
+        conda deactivate
+    done
+}
+
 _complete_venv(){
 	choices=`ls_venv`
 	suf=( -S '' )

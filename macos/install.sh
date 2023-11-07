@@ -18,3 +18,4 @@ brew install --cask anki
 brew install --cask notion
 brew install --cask eudic
 brew install --cask netnewswire
+brew install --cask alt-tab

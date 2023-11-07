@@ -9,6 +9,7 @@ alias -g N='>/dev/null'
 alias -g NN='>/dev/null 2>&1'
 alias -g F="| fzf"
 alias -g H="--help"
+alias -g R="| tail -r"
 
 which rg NN && {
     alias -g G='| rg'
@@ -68,17 +69,20 @@ alias pshow="ps -ef | grep"
 alias -g KILL="| awk '{print \$2}' | head -n -1 | xargs kill -9"
 
 # sync
-alias scp='scp -r'
-alias rsync='rsync -avP'
+alias scp="scp -r"
+alias rsync="rsync -avP"
 
 # python
 alias ip3="python3 -c 'import IPython; IPython.terminal.ipapp.launch_new_instance()'"
 alias pip3="python3 -m pip "
 alias pip="python -m pip "
 alias pip_tuna="pip install -i https://pypi.tuna.tsinghua.edu.cn/simple"
+alias pip_ins="pip install -v -e ."
+alias pdbtest="pytest --pdb --pdbcls=IPython.terminal.debugger:Pdb -s"
 
 # git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more
 alias gdown="git reset HEAD"
+alias gad="git add $(git ls-files --deleted)"
 
 # tmux alias
 alias ta="tmux a || tmux"

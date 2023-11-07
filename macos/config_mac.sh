@@ -17,3 +17,7 @@ defaults write com.apple.TextEdit "TabWidth" '4'
 echo "Safari: Configure Google as main search engine"
 defaults write com.apple.Safari SearchProviderIdentifier -string "com.google.Chrome"
 defaults write NSGlobalDomain NSProviderIdentifier -string "com.google.Chrome"
+
+# Mouse
+echo "Mouse: Scroll direction set to unnatural"
+defaults write -g com.apple.swipescrolldirection -bool false

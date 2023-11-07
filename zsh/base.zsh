@@ -65,7 +65,7 @@ compress_dir() {
 sdu () {
     # human-readable sorted du
     [[ "$#" -eq 1 && -d "$1" ]] && pushd "$1"
-    du -sh {*,.*} | sort -h
+    du -sh {*,.*} 2>/dev/null | sort -h
     popd
 }
 
@@ -112,7 +112,7 @@ src() {
     # Function to display the source code of a given function/alias
     local func_name="$1"
     if [[ -z "$func_name" ]]; then
-        echo "Usage: src <function_name>"
+        echo "Usage: src <function_name | alias name>"
         return 1
     fi
 
@@ -262,15 +262,6 @@ conf()
 	esac
 }
 
-duls()
-{
-    # list disk usage. use -r to show descending order
-    local val="$(du -sk * | sort -n $1 | sed -E ':a; s/([[:digit:]]+)([[:digit:]]{3})/\1,\2/; ta')"
-    local val="$(echo $val | head -n 10)"
-    local val="$(echo $val | awk -F'\t' '{printf "%10s %s\n",$1,substr($0,length($1)+2)}')"
-    echo $val
-}
-
 pypack()
 {
     timelog "packing whl now..."
@@ -294,12 +285,18 @@ rerun_check()
     timelog "total count:" $count
 }
 
-line()
-{
-    # Usage: line <file> <line_number>
+lines() {
+    # Usage: lines <file> <line_number>
+    # For example: `lines file.txt 22,25` `lines file.txt 24`
+    if [ $# -lt 2 ]; then
+        echo "Usage: display_lines <file> <lines>"
+        return 1
+    fi
+
     local file="$1"
-    local line_number="$2"
-    sed -n "${line_number}p" "$file"
+    local lines="$2"
+
+    sed -n "$lines p" "$file"
 }
 
 p() {
