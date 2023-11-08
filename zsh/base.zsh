@@ -25,7 +25,6 @@ get_os_version() {
 
 OS_DISTRIBUTION=$(get_os_distribution)
 OS_VERSION=$(get_os_version)
-PATH_CKPT="$HOME"
 
 timelog()
 {
@@ -124,7 +123,9 @@ src() {
         return
     fi
 
+    local type_info=$(type "$func_name")
     func_code=$(echo "$func_code" | expand -t 4)
+    echo "$type_info"
     echo "$func_code"
 }
 
@@ -136,6 +137,48 @@ _src() {
 
     # Generate completions using the _values function
     _values 'src completions' $completions
+}
+
+softlinks() {
+    # usage: softlinks <source_folder> [dest_folder]
+    local source_folder=$(realpath "$1")
+    local dest_folder="$2"
+
+    if [[ -z "$dest_folder" ]]; then
+        dest_folder=$(basename "$source_folder")
+    fi
+
+    if [[ ! -d "$source_folder" ]]; then
+        echo "Source folder does not exist: $source_folder"
+        return 1
+    fi
+
+    if [[ ! -d "$dest_folder" ]]; then
+        mkdir -p "$dest_folder"
+    fi
+
+    for src_file in "$source_folder"/*; do
+        if [[ -f "$src_file" ]]; then
+            file_name=$(basename "$src_file")
+            symlink_path="$dest_folder/$file_name"
+            ln -s "$src_file" "$symlink_path"
+            echo "Created a symbolic link: $symlink_path -> $src_file"
+        fi
+    done
+}
+
+search_funcs() {
+    # search functions whose value contains search string
+    # example usage: search_funcs "git"
+    local search_string="$1"
+    local function_name function_source
+
+    for function_name in ${(k)functions}; do
+    function_source="${functions[$function_name]}"
+    if [[ $function_source == *$search_string* ]]; then
+        echo "$function_name"
+    fi
+    done
 }
 
 mvp() {
@@ -218,10 +261,6 @@ env_get()
     fi
     echo "$env_value"
 }
-
-pck() { export PATH_CKPT=`pwd` }
-
-jck() { cd $PATH_CKPT }
 
 vf()
 {
@@ -378,6 +417,7 @@ function sftp_upload {
     # Example usage:
     # sftp_upload server_name /path/to/local_file_or_directory /path/to/remote_directory
     # If the remote path is not provided, it will default to login path
+    # This function should be used when rsync is not available
 
     if [[ $# -lt 2 ]]; then
         echo "Usage: sftp_upload <server_name> <local_file_or_directory> [remote_path]"

@@ -9,7 +9,12 @@ alias -g N='>/dev/null'
 alias -g NN='>/dev/null 2>&1'
 alias -g F="| fzf"
 alias -g H="--help"
-alias -g R="| tail -r"
+
+which tac NN && {
+    alias -g R="| tac"
+} || {
+    alias -g R="| tail -r"
+}
 
 which rg NN && {
     alias -g G='| rg'
@@ -44,7 +49,7 @@ alias findname="find . -name"
 
 ## diff dir a and b, run `diffdir a b DIFF`
 alias diffdir="diff --exclude '*.txt' --exclude '*.pkl' --exclude '*__pycache__*'"
-alias -g DIFF="--width=$COLUMNS --suppress-common-lines --side-by-side --recursive"
+alias -g DIFF='--width="$COLUMNS" --suppress-common-lines --side-by-side --recursive'
 
 ## tar aliases
 alias tarinfo="tar -tf"
@@ -58,6 +63,9 @@ alias which="which -a"
 alias m="make"
 ## pretty print the $PATH
 alias path='echo $PATH | tr -s ":" "\n"'
+alias pck='export PATH_CKPT="$(pwd)"'
+alias jck='cd "$PATH_CKPT"'
+alias search_alias='alias | grep'
 
 ## alternatives
 alias alter_conf="sudo update-alternatives --config"
@@ -81,8 +89,9 @@ alias pip_ins="pip install -v -e ."
 alias pdbtest="pytest --pdb --pdbcls=IPython.terminal.debugger:Pdb -s"
 
 # git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more
-alias gdown="git reset HEAD"
-alias gad="git add $(git ls-files --deleted)"
+alias gad='git add $(git ls-files --deleted)'
+alias grt='cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)"'  # override
+alias git_ls_unreachable='git fsck --unreachable --no-reflog'
 
 # tmux alias
 alias ta="tmux a || tmux"
