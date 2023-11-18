@@ -46,6 +46,7 @@ alias icat="imgcat"
 alias rp="realpath"
 alias rf="readlink -f"
 alias findname="find . -name"
+alias line="wc -l"
 
 ## diff dir a and b, run `diffdir a b DIFF`
 alias diffdir="diff --exclude '*.txt' --exclude '*.pkl' --exclude '*__pycache__*'"

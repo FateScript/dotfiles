@@ -167,6 +167,32 @@ softlinks() {
     done
 }
 
+
+split_file() {
+    if [[ $# -ne 3 ]]; then
+        echo "Usage: split_and_rename <filename> <num_pieces> <prefix>"
+        return 1
+    fi
+
+    local filename=$1
+    local num_pieces=$2
+    local prefix=$3
+
+    # Check if the file exists
+    if [[ ! -f $filename ]]; then
+        echo "Error: File not found: $filename"
+        return 1
+    fi
+
+    # Calculate lines per piece
+    local lines=$(wc -l < $filename)
+    local lines_per_piece=$(( (lines + num_pieces - 1) / num_pieces ))
+
+    split -l $lines_per_piece $filename $prefix
+    echo "$filename split into $num_pieces pieces."
+}
+
+
 search_funcs() {
     # search functions whose value contains search string
     # example usage: search_funcs "git"
@@ -179,77 +205,6 @@ search_funcs() {
         echo "$function_name"
     fi
     done
-}
-
-mvp() {
-    # Function to rename only the prefix of a file
-    # example usage: mvp /path/a.txt b
-    local old_prefix new_prefix extension old_file new_file
-
-    old_prefix="$1"
-    new_prefix="$2"
-
-    # Check if old_prefix exists and is a file
-    if [[ ! -f "$old_prefix" ]]; then
-        echo "Error: $old_prefix does not exist or is not a file."
-        return 1
-    fi
-
-    # Extract the extension from the old prefix (if any)
-    extension=${old_prefix##*.}
-
-    # Get the full path of the old file
-    old_file=$(realpath "$old_prefix")
-
-    # Create the new file name with the new prefix and the same extension
-    new_file="$(dirname "$old_file")/$new_prefix.${extension:-""}"
-
-    # Check if the new file name already exists
-    if [[ -e "$new_file" ]]; then
-        echo "Error: $new_file already exists."
-        return 1
-    fi
-
-    # Rename the file
-    mv "$old_file" "$new_file"
-
-    echo "Renamed $old_file to $new_file."
-}
-
-mvs() {
-    # Function to rename only the suffix of a file
-    # Example usage: mvs /path/a.txt .pdf
-    local old_suffix new_suffix old_file new_file
-
-    old_suffix="$1"
-    new_suffix="$2"
-
-    # Check if old_suffix exists and is a file
-    if [[ ! -f "$old_suffix" ]]; then
-        echo "Error: $old_suffix does not exist or is not a file."
-        return 1
-    fi
-
-    # Get the full path of the old file
-    old_file=$(realpath "$old_suffix")
-
-    # Extract the file name without extension
-    filename=$(basename -- "$old_file")
-    filename_without_extension=${filename%.*}
-
-    # Create the new file name with the same prefix and the new suffix
-    new_file="$(dirname "$old_file")/${filename_without_extension}$new_suffix"
-
-    # Check if the new file name already exists
-    if [[ -e "$new_file" ]]; then
-        echo "Error: $new_file already exists."
-        return 1
-    fi
-
-    # Rename the file
-    mv "$old_file" "$new_file"
-
-    echo "Renamed $old_file to $new_file."
 }
 
 env_get()
@@ -317,6 +272,23 @@ rerun_check()
 
     while [ "$check" -eq 0 ]
     do
+        eval "$1"
+        check="$?"
+        count=$(( count + 1 ))
+    done
+    timelog "total count:" $count
+}
+
+retry()
+{
+    # execute a command until it success, log the count of rerun.
+    eval "$1"
+    local check="$?"
+    local count=1
+
+    while [ "$check" -ne 0 ]
+    do
+        warnlog "rerun the command: $1"
         eval "$1"
         check="$?"
         count=$(( count + 1 ))
