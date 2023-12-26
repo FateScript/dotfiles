@@ -168,31 +168,6 @@ softlinks() {
 }
 
 
-split_file() {
-    if [[ $# -ne 3 ]]; then
-        echo "Usage: split_and_rename <filename> <num_pieces> <prefix>"
-        return 1
-    fi
-
-    local filename=$1
-    local num_pieces=$2
-    local prefix=$3
-
-    # Check if the file exists
-    if [[ ! -f $filename ]]; then
-        echo "Error: File not found: $filename"
-        return 1
-    fi
-
-    # Calculate lines per piece
-    local lines=$(wc -l < $filename)
-    local lines_per_piece=$(( (lines + num_pieces - 1) / num_pieces ))
-
-    split -l $lines_per_piece $filename $prefix
-    echo "$filename split into $num_pieces pieces."
-}
-
-
 search_funcs() {
     # search functions whose value contains search string
     # example usage: search_funcs "git"

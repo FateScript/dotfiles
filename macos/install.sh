@@ -5,17 +5,10 @@
 brew install coreutils gnu-tar gnu-find
 brew install reattach-to-user-namespace tmux
 brew install wget curl cmake htop the_silver_searcher
+brew install node rust go
 
 # cask app
-brew install --cask iterm2
-brew install --cask visual-studio-code
-brew install --cask google-chrome
-brew install --cask clipy
-brew install --cask clashx
-brew install --cask stats
-brew install --cask iina
-brew install --cask anki
-brew install --cask notion
-brew install --cask eudic
-brew install --cask netnewswire
-brew install --cask alt-tab
+brew install --cask iterm2 visual-studio-code \
+    google-chrome clipy clashx stats \
+    iina anki notion eudic \
+    netnewswire alt-tab
