@@ -62,13 +62,33 @@ compress_dir() {
 }
 
 sdu () {
-    # human-readable sorted du
-    [[ "$#" -eq 1 && -d "$1" ]] && pushd "$1"
-    du -sh {*,.*} 2>/dev/null | sort -h
-    popd
+    # usage: sdu <dir>
+    # reverse sort by size: sdu <dir> -r
+    local args="${@:2}"
+    local should_pop=1
+    if [[ "$#" -eq 1 ]]; then
+        if [[ -d "$1" ]]; then
+            pushd "$1" >/dev/null
+        else
+            args="${@:1}"
+            should_pop=0
+        fi
+    elif [[ "$#" -eq 0 ]]; then
+        should_pop=0
+    else
+        pushd "$1" >/dev/null
+    fi
+
+    du -sh {*,} 2>/dev/null | sort -h $args
+
+    if [[ "$should_pop" -eq 1 ]]; then
+        popd >/dev/null
+    fi
 }
 
 cdw() { cd $(dirname $(which $1)) }
+
+cdd() { cd $(dirname $1) }
 
 cdfzf()
 {
