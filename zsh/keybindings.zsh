@@ -17,6 +17,7 @@ bindkey '^F' forward-word
 bindkey '^B' backward-word
 bindkey '^H' backward-char
 bindkey '^L' forward-char
+bindkey '^?' backward-delete-char
 bindkey "^X^X" backward-delete-char
 
 # plugins

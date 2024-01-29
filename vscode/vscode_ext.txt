@@ -6,6 +6,7 @@ GitHub.copilot-labs
 James-Yu.latex-workshop
 jdinhlife.gruvbox
 mathematic.vscode-latex
+ms-python.isort
 ms-python.flake8
 ms-python.python
 ms-python.vscode-pylance
@@ -20,6 +21,7 @@ ms-vscode.cmake-tools
 ms-vscode.cpptools
 ms-vscode.cpptools-extension-pack
 ms-vscode.cpptools-themes
+ms-vscode.makefile-tools
 ms-vscode.remote-explorer
 sourcegraph.sourcegraph
 torn4dom4n.latex-support
