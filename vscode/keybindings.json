@@ -52,39 +52,11 @@
         "when": "editorTextFocus && suggestWidgetMultipleSuggestions && suggestWidgetVisible"
     },
     // ctrl+a hotkeys
-    // ctrl+a h to switch focus between sidebar and editor
-    // h and l are used in vim, h for left and l for right
-    {
-        "key": "ctrl+a h",
-        "command": "workbench.action.focusSideBar",
-        "when": "editorTextFocus && vim.active"
-    },
-    {
-        "key": "ctrl+a h",
-        "command": "workbench.action.focusActiveEditorGroup",
-        "when": "sideBarFocus && vim.active"
-    },
-    {
-        "key": "ctrl+a l",
-        "command": "workbench.action.focusSideBar",
-        "when": "editorTextFocus && vim.active"
-    },
-    {
-        "key": "ctrl+a l",
-        "command": "workbench.action.focusActiveEditorGroup",
-        "when": "sideBarFocus && vim.active"
-    },
     // ctrl+a c to compare file
     {
         "key": "ctrl+a c",
         "command": "workbench.files.action.compareFileWith",
         "when": "editorTextFocus"
-    },
-    // ctrl+a e to focus file-explorer, e means file-explorer
-    {
-        "key": "ctrl+a e",
-        "command": "workbench.files.action.focusFilesExplorer",
-        "when": "textInputFocus || sideBarFocus"
     },
     // ctrl+a t to focus terminal, t means terminal
     {
@@ -151,7 +123,7 @@
         "command": "explorer.openToSide",
         "when": "explorerViewletVisible && filesExplorerFocus"
     },
-    // use cmd+e(explorer) to toggle SideBar
+    // use cmd+e(explorer) to toggle SideBar / back to Explorer
     {
         "key": "cmd+e",
         "command": "workbench.view.explorer"
@@ -169,6 +141,28 @@
         "key": "cmd+e",
         "command": "-workbench.action.toggleSidebarVisibility",
         "when": "explorerViewletVisible"
+    },
+    // cmd+h/l to switch focus between sidebar and editor
+    // h and l are used in vim, h for left and l for right
+    {
+        "key": "cmd+h",
+        "command": "workbench.action.focusSideBar",
+        "when": "editorTextFocus && vim.active"
+    },
+    {
+        "key": "cmd+h",
+        "command": "workbench.action.focusActiveEditorGroup",
+        "when": "sideBarFocus && vim.active"
+    },
+    {
+        "key": "cmd+l",
+        "command": "workbench.action.focusSideBar",
+        "when": "editorTextFocus && vim.active"
+    },
+    {
+        "key": "cmd+l",
+        "command": "workbench.action.focusActiveEditorGroup",
+        "when": "sideBarFocus && vim.active"
     },
     // cmd + j/k to select next/previous item in quick open(cmd + p)
     {

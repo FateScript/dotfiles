@@ -89,8 +89,7 @@
     },
     "remote.SSH.enableRemoteCommand": true,
     // linter
-    "python.linting.flake8Enabled": true,
-    "python.linting.flake8Args": [
+    "flake8.args": [
         "--max-line-length=100"
     ],
     "security.workspace.trust.untrustedFiles": "open",
