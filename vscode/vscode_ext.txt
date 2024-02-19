@@ -1,13 +1,13 @@
 adpyke.codesnap
 eamodio.gitlens
-GitHub.copilot
-GitHub.copilot-chat
-GitHub.copilot-labs
-James-Yu.latex-workshop
+github.copilot
+github.copilot-chat
+james-yu.latex-workshop
 jdinhlife.gruvbox
 mathematic.vscode-latex
-ms-python.isort
+ms-python.debugpy
 ms-python.flake8
+ms-python.isort
 ms-python.python
 ms-python.vscode-pylance
 ms-toolsai.jupyter
@@ -23,7 +23,6 @@ ms-vscode.cpptools-extension-pack
 ms-vscode.cpptools-themes
 ms-vscode.makefile-tools
 ms-vscode.remote-explorer
-sourcegraph.sourcegraph
 torn4dom4n.latex-support
 twxs.cmake
 vscodevim.vim
