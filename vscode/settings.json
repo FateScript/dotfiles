@@ -79,7 +79,6 @@
       // local plugin
       "GitHub.copilot": ["ui"],
       "GitHub.copilot-chat": ["ui"],
-      "github.copilot-labs": ["ui"],
       "James-Yu.latex-workshop": ["ui"],
       "jdinhlife.gruvbox": ["ui"],
       "yzhang.markdown-all-in-one": ["ui"],

@@ -231,7 +231,7 @@ rgopen()
     fi
 }
 
-_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal conda ssh)' }
+_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal conda ssh py)' }
 
 conf()
 {
@@ -247,7 +247,8 @@ conf()
         zshlocal)   vim $HOME/.zsh.local;;
         conda)      vim $HOME/.condarc ;;
         ssh)        vim $HOME/.ssh/config;;
-		*)		echo "Unknown application $1" ;;
+        py)         vim $HOME/.python_startup;;
+        *)		echo "Unknown application $1" ;;
 	esac
 }
 

@@ -52,26 +52,10 @@ done
 safe_add_fpath "$HOME/.zsh/Completion"
 safe_add_fpath "$HOME/.zsh/functions"
 
-# ssh-agent {
-#
-# On Ubuntu, dbus will start ssh-agent
-
-if [ "$OS_DISTRIBUTION" = "arch" ]; then
-	if ! pgrep -u $USER ssh-agent > /dev/null; then
-	    [ -d "$HOME"/.config ] || mkdir -v "$HOME"/.config
-	    ssh-agent > ~/.config/ssh-agent-thing
-	    echo "ssh-agent started"
-	fi
-	eval $(<~/.config/ssh-agent-thing) > /dev/null
-fi
-
-# }
-
 safe_source "$HOME"/.fzf.zsh
 safe_source "$HOME"/.zsh.local  # local file is used to store local configuration
 
 # Activate virtual env and save the path as a tmux variable,
 # so that new panes/windows can re-activate as necessary
-if [ -n "$VIRTUAL_ENV" ]; then
-    source $VIRTUAL_ENV/bin/activate;
-fi
+[[ -n "$VIRTUAL_ENV" ]] && source $VIRTUAL_ENV/bin/activate
+[[ -s $HOME/.python_startup.py ]] && export PYTHONSTARTUP=$HOME/.python_startup.py

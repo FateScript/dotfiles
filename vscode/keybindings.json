@@ -130,16 +130,7 @@
     },
     {
         "key": "cmd+e",
-        "command": "-workbench.view.explorer"
-    },
-    {
-        "key": "cmd+e",
         "command": "workbench.action.toggleSidebarVisibility",
-        "when": "explorerViewletVisible"
-    },
-    {
-        "key": "cmd+e",
-        "command": "-workbench.action.toggleSidebarVisibility",
         "when": "explorerViewletVisible"
     },
     // cmd+h/l to switch focus between sidebar and editor
