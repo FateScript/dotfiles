@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 
 import collections
+import dis
 import functools
 import gzip
 import inspect
 import itertools
 import math
+import operator
 import os
 import pickle
+import random
 import re
 import shutil
 import string

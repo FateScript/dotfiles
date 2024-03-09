@@ -37,7 +37,8 @@ which pbcopy NN && {
 
 # file
 alias 'rm!'="rm -rf"
-alias trm=""  # rm to trash
+alias rm="rm -r"
+alias cp="cp -r"
 alias sv="sudo vim"
 alias vi="vim"
 alias v="vim"

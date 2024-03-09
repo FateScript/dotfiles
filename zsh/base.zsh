@@ -247,7 +247,7 @@ conf()
         zshlocal)   vim $HOME/.zsh.local;;
         conda)      vim $HOME/.condarc ;;
         ssh)        vim $HOME/.ssh/config;;
-        py)         vim $HOME/.python_startup;;
+        py)         vim $HOME/.python_startup.py;;
         *)		echo "Unknown application $1" ;;
 	esac
 }
