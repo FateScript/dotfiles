@@ -90,6 +90,36 @@ cdw() { cd $(dirname $(which $1)) }
 
 cdd() { cd $(dirname $1) }
 
+cpcd() {
+    local arg_count=$#
+
+    if [ $arg_count -lt 2 ]; then
+        echo "Usage: cpcd [options] source_file target_file"
+        return 1
+    fi
+
+    local target_dir="${@: -1}"
+
+    cp "$@" || return $?
+    cdd "$target_dir" || return $?
+}
+
+cpcdd() {
+    local arg_count=$#
+
+    if [ $arg_count -lt 2 ]; then
+        echo "Usage: cpcd [options] source_file [source_file ...] target_directory"
+        return 1
+    fi
+
+    local target_dir="${@: -1}"
+    ensure_dir "$target_dir"
+
+    cp "$@" || return $?
+    cd "$target_dir" || return $?
+}
+
+
 cdfzf()
 {
     local file=$(fzf)
