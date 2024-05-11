@@ -47,7 +47,6 @@ alias icat="imgcat"
 alias rp="realpath"
 alias rf="readlink -f"
 alias findname="find . -name"
-alias line="wc -l"
 alias latest='ls -lt | head -n 2 | awk '\''NR==2{print $NF}'\'
 
 ## diff dir a and b, run `diffdir a b DIFF`

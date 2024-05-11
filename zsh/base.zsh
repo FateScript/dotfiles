@@ -325,14 +325,19 @@ retry()
 lines() {
     # Usage: lines <file> <line_number>
     # For example: `lines file.txt 22,25` `lines file.txt 24`
-    if [ $# -lt 2 ]; then
-        echo "Usage: display_lines <file> <lines>"
+    if [ $# -lt 1 ]; then
+        echo "Usage: lines <file> [lines]"
         return 1
     fi
 
     local file="$1"
-    local lines="$2"
 
+    if [ $# -lt 2 ]; then
+        wc -l "$file"
+        return
+    fi
+
+    local lines="$2"
     sed -n "$lines p" "$file"
 }
 

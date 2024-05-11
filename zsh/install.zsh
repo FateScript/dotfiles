@@ -186,10 +186,8 @@ update_conf()
         echo "update zsh.local, for local usage"
         cp zsh.local $HOME/.zsh.local
     fi
-
-    if ! [ -f "$HOME/.python_startup.py" ]; then
-        echo "update $HOME/.python_startup.py, for python startup"
-        cp python/startup.py $HOME/.python_startup.py
-    fi
     echo "update configure of zsh & tmux done"
+
+    echo "update $HOME/.python_startup.py, for python startup"
+    cp python/startup.py $HOME/.python_startup.py
 }
