@@ -326,7 +326,7 @@ lines() {
     # Usage: lines <file> <line_number>
     # For example: `lines file.txt 22,25` `lines file.txt 24`
     if [ $# -lt 1 ]; then
-        echo "Usage: lines <file> [lines]"
+        warnlog "Usage: lines <file> [lines]"
         return 1
     fi
 
@@ -339,6 +339,46 @@ lines() {
 
     local lines="$2"
     sed -n "$lines p" "$file"
+}
+
+bak() {
+    # backup a file/dir, copy a new one with .bak suffix
+    for source in "$@"; do
+        local destination="${source}.bak"
+
+        if [ -e "$source" ]; then
+            cp -r "$source" "$destination"
+            timelog "Backup created: $destination"
+        else
+            warnlog "$source does not exist."
+        fi
+    done
+}
+
+bak_back() {
+    if [ "$#" -eq 0 ]; then
+        set -- *.bak
+    fi
+
+    for backup_file in "$@"; do
+        if [[ "$backup_file" =~ \.bak$ ]]; then
+            local original_file="${backup_file%.bak}"
+
+            if [ -e "$backup_file" ]; then
+                if [ -d "$original_file" ]; then
+                    mv "$backup_file"/* "$original_file/"
+                    rm -r "$backup_file"
+                else
+                    mv "$backup_file" "$original_file"
+                fi
+                timelog "Restored backup: $original_file"
+            else
+                warnlog "$backup_file does not exist."
+            fi
+        else
+            warnlog "$backup_file is not a valid file (does not end with .bak)."
+        fi
+    done
 }
 
 p() {
