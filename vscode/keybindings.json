@@ -133,6 +133,24 @@
         "command": "workbench.action.toggleSidebarVisibility",
         "when": "explorerViewletVisible"
     },
+    // cmd+n to open new terminal
+    {
+        "key": "cmd+n",
+        "command": "workbench.action.terminal.new",
+        "when": "terminalFocus"
+    },
+    // cmd+w to close current terminal
+    {
+        "key": "cmd+w",
+        "command": "workbench.action.terminal.kill",
+        "when": "terminalFocus"
+    },
+    // cmd+k to next terminal
+    {
+        "key": "cmd+k",
+        "command": "workbench.action.terminal.focusNext",
+        "when": "terminalFocus"
+    },
     // cmd+h/l to switch focus between sidebar and editor
     // h and l are used in vim, h for left and l for right
     {
