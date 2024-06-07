@@ -1,5 +1,6 @@
 {
     // terminal settings
+    "terminal.integrated.enableImages": true,
     "terminal.integrated.copyOnSelection": true,
     // "terminal.integrated.rightClickBehavior": "copyPaste",
     "editor.fontSize": 14,
@@ -95,9 +96,10 @@
     "workbench.startupEditor": "none",
     "github.copilot.enable": {
       "*": true,
-      "yaml": true,
       "plaintext": true,
-      "markdown": true
+      "markdown": true,
+      "scminput": false,
+      "yaml": true
     },
     "editor.stickyScroll.enabled": true,
     "workbench.editorAssociations": {
@@ -127,5 +129,6 @@
     ],
     "[python]": {
       "editor.formatOnType": true
-    }
+    },
+    "github.copilot.editor.enableAutoCompletions": true,
 }

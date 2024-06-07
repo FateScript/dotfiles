@@ -26,6 +26,7 @@ try:
     import cv2
     import scipy
     from cv2 import imread, imwrite, imshow
+    from tqdm import tqdm
 except ModuleNotFoundError:
     pass
 
