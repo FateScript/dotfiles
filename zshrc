@@ -22,17 +22,17 @@ export TERM=xterm-256color
 
 setopt complete_aliases  # enable alias completion
 
-# zsh history
-setopt INC_APPEND_HISTORY
-setopt HIST_IGNORE_ALL_DUPS
-setopt HIST_IGNORE_DUPS
-setopt HIST_IGNORE_SPACE
-setopt HIST_NO_FUNCTIONS
-setopt SHARE_HISTORY
-unsetopt EXTENDED_HISTORY
+# zsh history settings
 export HISTFILE=$HOME/.zsh_history
 export HISTSIZE=100000
 export SAVEHIST=80000
+setopt INC_APPEND_HISTORY    # append history as soon as the command is executed
+setopt HIST_IGNORE_DUPS      # don't record an entry that was just recorded again
+setopt HIST_IGNORE_SPACE     # don't save commands that start with a space
+setopt HIST_FIND_NO_DUPS     # don't display duplicates in history search
+setopt HIST_NO_FUNCTIONS     # don't save function definitions in the history file
+setopt SHARE_HISTORY         # share history between all sessions
+unsetopt EXTENDED_HISTORY    # disable the extended history format that includes timestamp information for each command
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,

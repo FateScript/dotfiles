@@ -79,7 +79,10 @@ alias alter_install="sudo update-alternatives --install"
 # process
 ## for example, to kill process with python, run `pshow python KILL`
 alias pshow="ps -ef | grep"
-alias -g KILL="| awk '{print \$2}' | head -n -1 | xargs kill -9"
+alias psfzf="ps -ef | fzf --bind 'ctrl-r:reload(ps -ef)' \
+      --header 'Press CTRL-R to reload' --header-lines=1 \
+      --height=50% --layout=reverse"
+alias -g KILL="| awk '{print \$2}' | head -n 1 | xargs kill -9"
 
 # sync
 alias scp="scp -r"
