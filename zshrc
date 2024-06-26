@@ -22,6 +22,18 @@ export TERM=xterm-256color
 
 setopt complete_aliases  # enable alias completion
 
+# zsh history
+setopt INC_APPEND_HISTORY
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_NO_FUNCTIONS
+setopt SHARE_HISTORY
+unsetopt EXTENDED_HISTORY
+export HISTFILE=$HOME/.zsh_history
+export HISTSIZE=100000
+export SAVEHIST=80000
+
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME

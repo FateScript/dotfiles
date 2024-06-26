@@ -49,6 +49,8 @@ alias rf="readlink -f"
 alias findname="find . -name"
 alias latest='ls -lt | head -n 2 | awk '\''NR==2{print $NF}'\'
 
+alias nohistory='unset HISTFILE'
+
 ## diff dir a and b, run `diffdir a b DIFF`
 alias diffdir="diff --exclude '*.txt' --exclude '*.pkl' --exclude '*__pycache__*'"
 alias -g DIFF='--width="$COLUMNS" --suppress-common-lines --side-by-side --recursive'
@@ -63,6 +65,7 @@ alias cn_tz="TZ=Asia/Shanghai date"  # cn time zone
 alias cursor="echo -e '\033[?25h'"
 alias which="which -a"
 alias m="make"
+
 ## pretty print the $PATH
 alias path='echo $PATH | tr -s ":" "\n"'
 alias pck='export PATH_CKPT="$(pwd)"'
