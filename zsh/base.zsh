@@ -261,7 +261,7 @@ rgopen()
     fi
 }
 
-_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal conda ssh py)' }
+_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal conda ssh py his)' }
 
 conf()
 {
@@ -278,6 +278,7 @@ conf()
         conda)      vim $HOME/.condarc ;;
         ssh)        vim $HOME/.ssh/config;;
         py)         vim $HOME/.python_startup.py;;
+        his)        vim $HOME/.zsh_history;;
         *)		echo "Unknown application $1" ;;
 	esac
 }
@@ -451,8 +452,8 @@ remove_path() {
 }
 
 pylibinfo() {
-  if [[ -z "$1" ]]; then echo "Usage: pylibinfo libname"; return; fi
-  python -c "import $1 as X; print(X.__file__, end=' '); print(X.__version__)"
+    if [[ -z "$1" ]]; then echo "Usage: pylibinfo libname"; return; fi
+    python -c "import $1 as X; print(X.__file__, end=' '); print(X.__version__)"
 }
 
 function sftp_upload {
@@ -487,7 +488,7 @@ EOF
 
 _sftp_upload() {
     local -a servers
-    servers=($(cat ~/.ssh/config | grep 'Host ' | sed 's/Host //'))
+    servers=($(grep '^Host ' ~/.ssh/config | sed 's/Host //' | grep -v '^*$'))
 
     case $words[2] in
         (*)
