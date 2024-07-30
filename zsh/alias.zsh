@@ -97,8 +97,11 @@ alias pip_ins="pip install -v -e ."
 alias pdbtest="pytest --pdb --pdbcls=IPython.terminal.debugger:Pdb -s"
 
 # git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more
+alias gmm="git commit --amend"  # git message modification
 alias gad='git add $(git ls-files --deleted)'
 alias grt='cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)"'  # override
+alias gcf_mir='git config --global url."https://gitclone.com/".insteadOf https://'
+alias gcf_rst_mir='git config --global --unset url.https://gitclone.com/.insteadOf'
 alias git_ls_unreachable='git fsck --unreachable --no-reflog'
 
 # tmux alias

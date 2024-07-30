@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import collections
+import contextlib
 import dis
 import functools
 import gzip
@@ -17,15 +18,27 @@ import shutil
 import string
 import sys
 import time
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, namedtuple
 from datetime import datetime
 from pprint import pprint
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    Union,
+)
 
 try:
-    import numpy as np
     import cv2
+    import numpy as np
     import scipy
-    from cv2 import imread, imwrite, imshow
+    from cv2 import imread, imshow, imwrite
     from tqdm import tqdm
 except ModuleNotFoundError:
     pass
