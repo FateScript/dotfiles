@@ -29,10 +29,15 @@ which rg NN && {
 
 which pbcopy NN && {
     alias -g C="| pbcopy"
+    function copy() { cat "${1:-/dev/stdin}" | pbcopy; }
 } || {
     which xclip NN && {
         alias -g C='| xclip -selection clipboard'
-    } || alias -g C='| pipe_clip'
+        function copy() { cat "${1:-/dev/stdin}" | xclip -selection clipboard -in &>/dev/null &|; }
+    } || {
+        alias copy="yank"
+        alias -g C='| yank'
+    }
 }
 
 # file
@@ -62,6 +67,7 @@ alias tarunzip="tar -zxvf"
 
 # system
 alias cn_tz="TZ=Asia/Shanghai date"  # cn time zone
+alias zh_cn="LC_ALL='zh_CN.UTF-8'"  # encode
 alias cursor="echo -e '\033[?25h'"
 alias which="which -a"
 alias m="make"

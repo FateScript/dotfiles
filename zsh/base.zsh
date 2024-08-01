@@ -35,6 +35,23 @@ timelog()
 
 warnlog() { echo -e "\033[31m$@\033[0m" }
 
+inputs()
+{
+    local text=$( cat "$@" )
+    printf %s "$text"
+}
+
+# known cmd && cmd args
+# known cmd || echo "not known cmd"
+known() { command -v "$1" >/dev/null }
+
+# maybe cmd args && echo "executed"
+# maybe cmd args || echo "not executed"
+maybe() { known "$1" && "$@" }
+
+# slient version maybe
+alive() { known "$1" && "$@" >/dev/null 2>&1 }
+
 ensure_dir()
 {
     if [[ ! -d "$1" ]]; then
@@ -101,6 +118,20 @@ cpcd() {
     local target_dir="${@: -1}"
 
     cp "$@" || return $?
+    cdd "$target_dir" || return $?
+}
+
+mvcd() {
+    local arg_count=$#
+
+    if [ $arg_count -lt 2 ]; then
+        echo "Usage: mvcd [options] source_file target_file"
+        return 1
+    fi
+
+    local target_dir="${@: -1}"
+
+    mv "$@" || return $?
     cdd "$target_dir" || return $?
 }
 
@@ -290,7 +321,7 @@ pypack()
     timelog "pack whl into dist directory done..."
 }
 
-rerun_check()
+retry_until_failed()
 {
     # execute a command until it failed, log the count of run.
     eval "$1"
@@ -416,13 +447,18 @@ p() {
 # ANSI escape code related functions
 # learn more at https://en.wikipedia.org/wiki/ANSI_escape_code
 
-pipe_clip()
+yank()
 {
     # Copy the input to the clipboard, when pbcopy/xclip is not available
-    # Example: echo "hello" | pipe_clip
     # The terminal should support OSC 52 escape sequence protocol
-    local input=$(cat)
-    printf "\e]52;c;$(echo $input | base64)\a"
+    # Example: echo "hello" | yank
+    # Reference: https://sunaku.github.io/tmux-yank-osc52.html
+    local text=$( cat "$@" )
+    input() { printf %s "$text" }
+
+    len=$( input | wc -c ) max=74994
+    test $len -gt $max && echo "$0: input is $(( len - max )) bytes too long" >&2
+    printf "\e]52;c;$( input | base64 | tr -d '\r\n' )\a"
 }
 
 dedup_path() {
