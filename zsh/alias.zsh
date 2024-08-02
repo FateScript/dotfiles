@@ -40,6 +40,8 @@ which pbcopy NN && {
     }
 }
 
+which dc NN || alias dc="cd"  # miss-type correction
+
 # file
 alias 'rm!'="rm -rf"
 alias rm="rm -r"
