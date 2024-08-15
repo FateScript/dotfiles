@@ -112,10 +112,17 @@
         "command": "list.select",
         "when": "explorerViewletVisible && filesExplorerFocus"
     },
+    // r to rename file
     {
         "key": "r",
         "command": "renameFile",
         "when": "explorerViewletVisible && filesExplorerFocus"
+    },
+    // d to download remote file
+    {
+        "key": "d",
+        "command": "explorer.download",
+        "when": "explorerViewletVisible && filesExplorerFocus && remoteConnectionState == connected"
     },
     // cmd+enter to open file to the side
     {

@@ -103,6 +103,7 @@ alias pip="python -m pip "
 alias pip_tuna="pip install -i https://pypi.tuna.tsinghua.edu.cn/simple"
 alias pip_ins="pip install -v -e ."
 alias pdbtest="pytest --pdb --pdbcls=IPython.terminal.debugger:Pdb -s"
+alias nb2py="jupyter nbconvert --to script"
 
 # git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more
 alias gmm="git commit --amend"  # git message modification
