@@ -113,6 +113,10 @@ alias gcf_mir='git config --global url."https://gitclone.com/".insteadOf https:/
 alias gcf_rst_mir='git config --global --unset url.https://gitclone.com/.insteadOf'
 alias git_ls_unreachable='git fsck --unreachable --no-reflog'
 
+# download
+alias vget="you-get"
+alias vgetl="you-get --playlist"
+
 # tmux alias
 alias ta="tmux a || tmux"
 alias tn="tmux new -s"
