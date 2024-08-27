@@ -128,7 +128,7 @@
     {
         "key": "cmd+enter",
         "command": "explorer.openToSide",
-        "when": "explorerViewletVisible && filesExplorerFocus"
+        "when": "explorerViewletVisible && filesExplorerFocus && !editorHasSelection"
     },
     // use cmd+e(explorer) to toggle SideBar / back to Explorer
     {
@@ -211,6 +211,7 @@
         "command": "workbench.action.previousSideBarView",
         "when": "sideBarFocus && vim.active"
     },
+    // cmd + j to toggle panel and then focus terminal
     {
         "key": "cmd+j",
         "command": "runCommands",
@@ -236,5 +237,13 @@
         "key": "cmd+h",
         "command": "workbench.action.previousPanelView",
         "when": "panelFocus"
+    },
+    {
+        "key": "cmd+b",
+        "command": "-workbench.action.toggleSidebarVisibility",
+    },
+    {
+        "key": "cmd+b",
+        "command": "workbench.action.toggleAuxiliaryBar",
     }
 ]
