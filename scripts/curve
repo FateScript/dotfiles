@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+import matplotlib.pyplot as plt
+import tempfile
+from pytools.utils import terminal_image, auto_load
+
+
+def plot_and_save(file: str = "trainer_state.json", step: int = None):
+    data = auto_load(file)["log_history"]
+    if step:
+        data = data[:step]
+
+    steps = [x['step'] for x in data]
+    losses = [x['loss'] for x in data]
+
+    plt.figure(figsize=(10, 5))  # You can adjust the size as needed
+    plt.plot(steps, losses, marker='o')  # 'o' adds a marker at each data point
+
+# Adding titles and labels
+    plt.title('Training Loss Over Steps')
+    plt.xlabel('Step')
+    plt.ylabel('Loss')
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmpfile:
+        plt.savefig(tmpfile.name)
+        image_name = tmpfile.name
+        terminal_image(image_name)
+
+
+if __name__ == "__main__":
+    import fire
+    fire.Fire(plot_and_save)

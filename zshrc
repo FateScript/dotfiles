@@ -57,6 +57,8 @@ plugins=(
 # alias and self defined function
 safe_export_path $HOME/.local/bin >/dev/null
 safe_source $ZSH/oh-my-zsh.sh
+safe_source $HOME/.zsh/base.zsh
+
 for file in $HOME/.zsh/*.zsh; do
     source $file
 done

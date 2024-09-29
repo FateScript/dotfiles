@@ -73,6 +73,7 @@ alias zh_cn="LC_ALL='zh_CN.UTF-8'"  # encode
 alias cursor="echo -e '\033[?25h'"
 alias which="which -a"
 alias m="make"
+alias font="fc-list :lang=zh"
 
 ## pretty print the $PATH
 alias path='echo $PATH | tr -s ":" "\n"'
@@ -127,4 +128,7 @@ if [ "$OS_DISTRIBUTION" = "arch" ]; then
 	alias ySs="yaourt -Ss"
 	alias pS="sudo pacman -S --noconfirm --needed"
 	alias pSs="sudo pacman -Ss"
+elif [ "$OS_DISTRIBUTION" = "macos" ]; then   # MacOS specific aliases
+    # example: app_name /Applications/Visual\ Studio\ Code.app
+    alias app_name="mdls -name kMDItemCFBundleIdentifier"
 fi
