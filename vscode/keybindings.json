@@ -18,6 +18,17 @@
         "command": "workbench.action.focusRightGroup",
         "when": "editorTextFocus && vim.active"
     },
+    // move editor to left/right
+    {
+        "key": "cmd+,",
+        "command": "workbench.action.moveEditorLeftInGroup",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "cmd+.",
+        "command": "workbench.action.moveEditorRightInGroup",
+        "when": "editorTextFocus"
+    },
     // ctrl+h/l to left and right in compare view
     // refernece issue: https://github.com/microsoft/vscode/issues/95068
     {
