@@ -59,7 +59,7 @@ install_zsh_syntax_highlight()
 
 install_zsh_fzf_tab()
 {
-    local fzf_tab_path="${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fzf-tab"
+    local fzf_tab_path="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/fzf-tab"
     if [ -d "$fzf_tab_path" ]; then
         echo "fzf-tab already installed"
     else
@@ -96,7 +96,7 @@ install_fzf()
     if [ -d "$HOME/.fzf" ]; then
         echo "fzf already installed"
     else
-        git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+        git clone --depth 1 https://github.com/junegunn/fzf.git $HOME/.fzf
         $HOME/.fzf/install
     fi
 }
@@ -106,7 +106,7 @@ install_fzf()
     if [ -d "$HOME/.fzf" ]; then
         echo "fzf already installed"
     else
-        git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+        git clone --depth 1 https://github.com/junegunn/fzf.git $HOME/.fzf
         "$HOME"/.fzf/install
     fi
 }
@@ -176,7 +176,7 @@ update_conf()
     fi
     cp tmux.conf $HOME/.tmux.conf
     if [ -d $HOME/.zsh ]; then
-        echo "remove ~/.zsh dir"
+        echo "remove $HOME/.zsh dir"
         rm -rf $HOME/.zsh
     fi
     cp zshrc $HOME/.zshrc
