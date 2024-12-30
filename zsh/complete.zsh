@@ -39,4 +39,3 @@ autoload compinstall  # lazy load zsh's completion system
 
 # file completion ignore
 zstyle ':completion:*:*:*vim:*:*files' ignored-patterns '*.(avi|mkv|rmvb|pyc|wmv|mp3|mp4|pdf|doc|docx|jpg|png|bmp|gif|npy|bin|o)'
-zstyle ':completion:*:*:*v:*:*files' ignored-patterns '*.(avi|mkv|rmvb|pyc|wmv|mp3|pdf|doc|docx|jpg|png|bmp|gif|npy|bin|o)'  # alias v=vim

@@ -487,6 +487,24 @@ remove_path() {
     export PATH="$new_path"
 }
 
+fake_dir() {
+  local src_dir="$1"
+  local dest_dir="${2:-${src_dir}_fake}"  # use $2 if provided, otherwise use "${src_dir}_fake"
+
+  if [ -z "$src_dir" ] || [ -z "$dest_dir" ]; then
+    echo "Usage: fake_dir <source_dir> <destination_dir>"
+    return 1
+  fi
+
+  # rm trailing slash from source directory if it exists
+  src_dir="${src_dir%/}"
+  mkdir -p "$dest_dir"
+
+  # copy the directory structure without the file content
+  find "$src_dir" -mindepth 1 -type d -exec bash -c 'mkdir -p "$1/${0#$2/}"' {} "$dest_dir" "$src_dir" \;
+  find "$src_dir" -type f -exec bash -c 'touch "$1/${0#$2/}"' {} "$dest_dir" "$src_dir" \;
+}
+
 pylibinfo() {
     if [[ -z "$1" ]]; then echo "Usage: pylibinfo libname"; return; fi
     python -c "import $1 as X; print(X.__file__, end=' '); print(X.__version__)"

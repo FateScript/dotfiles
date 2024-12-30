@@ -56,6 +56,9 @@ alias rf="readlink -f"
 alias findname="find . -name"
 alias latest='ls -lt | head -n 2 | awk '\''NR==2{print $NF}'\'
 
+# clipboard
+alias cp_latest='echo $(latest) | yank'
+
 alias nohistory='unset HISTFILE'
 
 ## diff dir a and b, run `diffdir a b DIFF`
@@ -79,6 +82,8 @@ alias font="fc-list :lang=zh"
 alias path='echo $PATH | tr -s ":" "\n"'
 alias pck='export PATH_CKPT="$(pwd)"'
 alias jck='cd "$PATH_CKPT"'
+
+# search
 alias search_alias='alias | grep'
 
 ## alternatives
@@ -113,6 +118,9 @@ alias grt='cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)"'  # overr
 alias gcf_mir='git config --global url."https://gitclone.com/".insteadOf https://'
 alias gcf_rst_mir='git config --global --unset url.https://gitclone.com/.insteadOf'
 alias git_ls_unreachable='git fsck --unreachable --no-reflog'
+
+alias git_proxy='git config --global http.proxy 127.0.0.1:7890 && git config --global https.proxy 127.0.0.1:7890'
+alias git_proxy_unset='git config --global --unset http.proxy && git config --global --unset https.proxy'
 
 # download
 alias vget="you-get"
