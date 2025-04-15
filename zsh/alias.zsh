@@ -16,6 +16,8 @@ which tac NN && {
     alias -g R="| tail -r"
 }
 
+which python NN || alias python="python3"
+
 which rg NN && {
     alias -g G='| rg'
     alias ag='rg -i'

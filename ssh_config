@@ -1,0 +1,11 @@
+# Default settings (will apply to all hosts)
+Host *
+  ForwardAgent yes          # Enable SSH agent forwarding
+  ForwardX11 yes            # Enable X11 forwarding
+  ServerAliveInterval 60    # Send keep-alive packets every 60 seconds
+  ServerAliveCountMax 3     # Disconnect after 3 failed keep-alive attempts
+  UseKeychain yes           # Use macOS keychain (useful on Mac)
+  IdentityFile ~/.ssh/id_rsa # Specify the private key to use
+
+Host xxxxx
+    HostName yyyy
