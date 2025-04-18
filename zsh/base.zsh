@@ -273,6 +273,12 @@ env_get()
     echo "$env_value"
 }
 
+function proxy_off() {
+   unset http_proxy
+   unset https_proxy
+   unset no_proxy
+}
+
 vf()
 {
     local file=$(fzf)
@@ -292,7 +298,7 @@ rgopen()
     fi
 }
 
-_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal conda ssh py his)' }
+_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal conda ssh py his pip git)' }
 
 conf()
 {
@@ -308,8 +314,10 @@ conf()
         zshlocal)   vim $HOME/.zsh.local;;
         conda)      vim $HOME/.condarc ;;
         ssh)        vim $HOME/.ssh/config;;
-        py)         vim $HOME/.python_startup.py;;
         his)        vim $HOME/.zsh_history;;
+        py)         vim $HOME/.python_startup.py;;
+        pip)        vim $HOME/.config/pip/pip.conf;;
+        git)        vim $HOME/.gitconfig;;
         *)		echo "Unknown application $1" ;;
 	esac
 }

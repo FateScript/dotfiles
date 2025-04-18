@@ -110,6 +110,7 @@ alias pip3="python3 -m pip "
 alias pip="python -m pip "
 alias pip_tuna="pip install -i https://pypi.tuna.tsinghua.edu.cn/simple"
 alias pip_ins="pip install -v -e ."
+alias pip_ins_compat="pip install -e . --config-settings editable_mode=compat"
 alias pdbtest="pytest --pdb --pdbcls=IPython.terminal.debugger:Pdb -s"
 alias nb2py="jupyter nbconvert --to script"
 
@@ -120,9 +121,14 @@ alias grt='cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)"'  # overr
 alias gcf_mir='git config --global url."https://gitclone.com/".insteadOf https://'
 alias gcf_rst_mir='git config --global --unset url.https://gitclone.com/.insteadOf'
 alias git_ls_unreachable='git fsck --unreachable --no-reflog'
+alias gbless="git branchless"
 
 alias git_proxy='git config --global http.proxy 127.0.0.1:7890 && git config --global https.proxy 127.0.0.1:7890'
 alias git_proxy_unset='git config --global --unset http.proxy && git config --global --unset https.proxy'
+
+# cargo
+alias install_delta="cargo install git-delta"
+alias install_branchless="cargo install --locked git-branchless"
 
 # download
 alias vget="you-get"

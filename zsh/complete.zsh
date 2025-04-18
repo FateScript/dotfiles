@@ -29,8 +29,62 @@ __user_complete(){
         zle end-of-line
         return
     fi
-    # zle expand-or-complete
-    zle fzf-tab-complete
+    # try to use fzf-tab and fzf if available
+    if [[ -n ${+functions[fzf-tab-complete]} ]] && command -v fzf >/dev/null; then
+        zle fzf-tab-complete
+    else  # fallback to normal
+        zle expand-or-complete
+    fi
+}
+
+fzf_tab_off() {
+    unfunction __user_complete 2>/dev/null
+    unfunction fzf_tab_on 2>/dev/null  # remove previous toggle if any
+
+    __user_complete() {
+        if [[ -z $BUFFER ]]; then
+            return
+        fi
+
+        if [[ $BUFFER =~ "^\.\.\.*$" || $BUFFER =~ ".* \.\.\..*$" ]]; then
+            __expand_dots "$BUFFER"
+            zle end-of-line
+            return
+        fi
+
+        zle expand-or-complete
+    }
+    zle -N __user_complete
+    bindkey '^I' __user_complete
+
+    echo "fzf-tab-complete is OFF"
+
+    # Provide way to toggle it back on
+    fzf_tab_on() {
+        unfunction __user_complete 2>/dev/null
+
+        __user_complete() {
+            if [[ -z $BUFFER ]]; then
+                return
+            fi
+
+            if [[ $BUFFER =~ "^\.\.\.*$" || $BUFFER =~ ".* \.\.\..*$" ]]; then
+                __expand_dots "$BUFFER"
+                zle end-of-line
+                return
+            fi
+
+            if (( $+functions[fzf-tab-complete] )) && command -v fzf >/dev/null; then
+                zle fzf-tab-complete
+            else
+                zle expand-or-complete
+            fi
+        }
+        zle -N __user_complete
+        bindkey '^I' __user_complete
+
+        echo "fzf-tab-complete is ON"
+    }
 }
 
 zle -N __user_complete

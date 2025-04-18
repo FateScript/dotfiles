@@ -7,5 +7,6 @@ Host *
   UseKeychain yes           # Use macOS keychain (useful on Mac)
   IdentityFile ~/.ssh/id_rsa # Specify the private key to use
 
-Host xxxxx
+Host xxxx
     HostName yyyy
+    User zzzz
