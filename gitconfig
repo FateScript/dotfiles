@@ -1,8 +1,3 @@
-[branchless "navigation"]
-	autoSwitchBranches = false
-[tig]
-	reference-format = hide:other
-
 [core]
     pager = delta
 
@@ -12,3 +7,20 @@
 [delta]
     navigate = true  # use n and N to move between diff sections
     dark = true      # or light = true, or omit for auto-detection
+
+[diff "python"]
+    xfuncname="^\\s*(class.*\\(.*\\)|def.*)(\\(|:)"
+
+[alias]
+    # branchless:
+    # https://stackoverflow.com/questions/204461/git-squash-fixup-earlier-commit
+    fixup = !sh -c 'REV=$(git rev-parse $1) && git commit --fixup $@ && git rebase -i --autostash --autosquash $REV^ && git restack' -
+
+[branchless "next"]
+	interactive = true
+
+[branchless "navigation"]
+	autoSwitchBranches = false
+
+# [tig]
+#	 reference-format = hide:other

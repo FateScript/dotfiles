@@ -144,6 +144,7 @@ install_tools()
     os_install rsync
     os_install axel
     os_install ripgrep
+    os_install ncdu
 
     pip install imgcat
     install_fzf

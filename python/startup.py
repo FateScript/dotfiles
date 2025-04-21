@@ -35,10 +35,10 @@ from typing import (
 )
 
 try:
-    import cv2
+    # import cv2
+    # from cv2 import imread, imshow, imwrite
     import numpy as np
     import scipy
-    from cv2 import imread, imshow, imwrite
     from tqdm import tqdm
 except ModuleNotFoundError:
     pass

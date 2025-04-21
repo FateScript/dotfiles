@@ -114,6 +114,9 @@ alias pip_ins_compat="pip install -e . --config-settings editable_mode=compat"
 alias pdbtest="pytest --pdb --pdbcls=IPython.terminal.debugger:Pdb -s"
 alias nb2py="jupyter nbconvert --to script"
 
+alias upip="uv pip"
+alias usrc="source .venv/bin/activate"
+
 # git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more
 alias gmm="git commit --amend"  # git message modification
 alias gad='git add $(git ls-files --deleted)'
@@ -121,10 +124,21 @@ alias grt='cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)"'  # overr
 alias gcf_mir='git config --global url."https://gitclone.com/".insteadOf https://'
 alias gcf_rst_mir='git config --global --unset url.https://gitclone.com/.insteadOf'
 alias git_ls_unreachable='git fsck --unreachable --no-reflog'
-alias gbless="git branchless"
+alias gsbi="git submodule update --init --recursive"
 
-alias git_proxy='git config --global http.proxy 127.0.0.1:7890 && git config --global https.proxy 127.0.0.1:7890'
-alias git_proxy_unset='git config --global --unset http.proxy && git config --global --unset https.proxy'
+# git proxy
+alias git_proxy_on='git config --global http.proxy 127.0.0.1:7890 && git config --global https.proxy 127.0.0.1:7890'
+alias git_proxy_off='git config --global --unset http.proxy && git config --global --unset https.proxy'
+
+# git branchless
+alias gbls="git branchless"
+alias gbp="git prev"
+alias gbn="git next"
+alias gsl="git sl"  # smart log
+alias gmv="git move"  # smart log
+alias gin="git move --insert --exact"  # insert a commit
+alias grsk="git restack"
+alias gfup="git fixup"
 
 # cargo
 alias install_delta="cargo install git-delta"
