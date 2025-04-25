@@ -42,6 +42,22 @@ which pbcopy NN && {
     }
 }
 
+which nvidia-smi NN && {  # https://github.com/ppwwyyxx/dotfiles/blob/6f3985ad81d4113f57532fbf60d6b2b6214a5d04/.zsh/alias.zsh#L427-L432
+    alias __nvq='nvidia-smi --query-gpu=temperature.gpu,clocks.current.sm,pstate,power.draw,utilization.gpu,utilization.memory,memory.free --format=csv | tail -n+2'
+    which nl NN && {
+        alias nvq='(echo "GPU,temp, clocks, pstate, power, util.GPU, util.MEM, freeMEM" && __nvq | nl -s, -w1 -v0) | column -t -s, | colorline'
+    } || {
+        alias nvq='(echo "temp, clocks, power, util.GPU, util.MEM, freeMEM" && __nvq) | column -t -s , | colorline'
+    }
+    alias __nvp="nvidia-smi | awk '/GPU.*PID/ { seen=1 }; /==========/{if (seen) pp=1; next} pp ' \
+        | head -n-1  |  awk '{print \$2, \$(NF-1), \$3 == \"N/A\" ? \$5 : \$3}' \
+        | grep -v '^No' \
+        | awk 'BEGIN{OFS=\"\\t\"} { cmd=(\"ps -ho '%a' \" \$3); cmd | getline v; close(cmd); \$4=v; print }'"
+    alias nvp="(echo \"GPU\tMEM\tPID\tCOMMAND\" && __nvp) | column -t -s $'\t' | cut -c 1-\$(tput cols) | colorline"
+    alias nvpkill="nvp | awk '{print \$3}' | tail -n+2 | xargs -I {} sh -c 'echo Killing {}; kill {} || echo failed'"
+    alias fuser-nvidia-kill="fuser -v /dev/nvidia* 2>&1 | egrep -o '$USER.*[0-9]+ .*'  | awk '{print \$2}' | xargs -I {} sh -c 'echo Killing {}; kill {} || echo failed'"
+}
+
 which dc NN || alias dc="cd"  # miss-type correction
 
 # file
@@ -125,6 +141,8 @@ alias gcf_mir='git config --global url."https://gitclone.com/".insteadOf https:/
 alias gcf_rst_mir='git config --global --unset url.https://gitclone.com/.insteadOf'
 alias git_ls_unreachable='git fsck --unreachable --no-reflog'
 alias gsbi="git submodule update --init --recursive"
+alias gign="git ls-files --others --ignored --exclude-standard"
+alias gclean_check="git clean -nd"
 
 # git proxy
 alias git_proxy_on='git config --global http.proxy 127.0.0.1:7890 && git config --global https.proxy 127.0.0.1:7890'
@@ -132,17 +150,26 @@ alias git_proxy_off='git config --global --unset http.proxy && git config --glob
 
 # git branchless
 alias gbls="git branchless"
+alias gb_init="git branchless init --main-branch "
+alias gb_unin="git branchless init --uninstall"
 alias gbp="git prev"
 alias gbn="git next"
 alias gsl="git sl"  # smart log
 alias gmv="git move"  # smart log
-alias gin="git move --insert --exact"  # insert a commit
+alias gin="git move --insert --exact"  # git insert a commit
 alias grsk="git restack"
 alias gfup="git fixup"
+alias ghd="git hide"
+alias guhd="git unhide"
+alias ggo="git sw -i"  # git go to switch commit when using branchless
+alias gsp="git_branch_push"  # short for super push, used for git branchless
 
 # cargo
 alias install_delta="cargo install git-delta"
 alias install_branchless="cargo install --locked git-branchless"
+
+# curl
+alias install_ollama="curl -fsSL https://ollama.com/install.sh | sh"
 
 # download
 alias vget="you-get"

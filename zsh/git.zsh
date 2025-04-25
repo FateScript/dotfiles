@@ -30,6 +30,7 @@ git_gc_unreachable()
 
 git_clean_branch()
 {
+    # clean branches that no longer exist in remote and fully merged branch
     local origin=$1
     if [ -z "$1" ]; then
         origin=origin
@@ -37,6 +38,46 @@ git_clean_branch()
     git remote prune $origin
     git branch --merged | egrep -v "(^\*|main)" | xargs git branch -d
 }
+
+git_branch_push() {
+    # push commit_hash to remote branch, combined with git branchless
+    local remote="origin"
+    local commit_hash=""
+    local remote_branch=""
+
+    if [[ $# -eq 1 ]]; then
+        remote_branch="$1"
+        commit_hash=$(git rev-parse HEAD)
+    elif [[ $# -eq 2 ]]; then
+        if git remote get-url "$1" &>/dev/null; then
+            remote="$1"
+            remote_branch="$2"
+            commit_hash=$(git rev-parse HEAD)
+        else
+            commit_hash="$1"
+            remote_branch="$2"
+        fi
+    elif [[ $# -eq 3 ]]; then
+        remote="$1"
+        commit_hash="$2"
+        remote_branch="$3"
+    else
+        echo "Usage:"
+        echo "    git_branch_push remote-branch"
+        echo "    git_branch_push [remote|commit-hash] remote-branch"
+        echo "    git_branch_push remote commit-hash remote-branch"
+        return 1
+    fi
+
+    if [[ -z "$remote_branch" ]]; then
+        echo "Error: remote branch name is required."
+        return 1
+    fi
+
+    # NOTE: using "$commit_hash:refs/heads/$remote_branch" will triger colon modifiers in zsh
+    git push "$remote" "${commit_hash}:refs/heads/${remote_branch}"
+}
+
 
 git_llm_commit() {
     # Git commit with AI generated message
