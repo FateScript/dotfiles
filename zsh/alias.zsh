@@ -164,7 +164,7 @@ alias ghd="git hide"
 alias guhd="git unhide"
 alias ggo="git sw -i"  # git go to switch commit when using branchless
 alias gsp="git_branch_push"  # short for super push, used for git branchless
-alias gsy="git sync --all"
+alias gsy="git sync --pull"
 
 # cargo
 alias install_delta="cargo install git-delta"
