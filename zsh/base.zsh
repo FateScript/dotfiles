@@ -59,12 +59,19 @@ ensure_dir()
     fi
 }
 
-join_paths() {
-    local -a paths
-    paths=("${(s:/:)1}")
-    paths+=("${(@)@[2,-1]}")
-    local joined_path="${(j:/:)paths}"
-    echo "$joined_path"
+# from https://github.com/ppwwyyxx/dotfiles/blob/6f3985ad81d4113f57532fbf60d6b2b6214a5d04/.zsh/alias.zsh#L141
+colorline() {
+    local cols
+    cols=($fg[green] $fg[white] $fg[blue] $fg[white] $fg[cyan] $fg[white]
+        $fg[magenta] $fg[white] "\e[38;05;154m" $fg[white])
+    local ncol=${#cols}
+    local i=1
+    while IFS= read line; do
+        echo -n $cols[$i]
+        echo "$line"
+        i=$(( $i % $ncol + 1 ))
+    done
+    echo -n $reset_color
 }
 
 compress_dir() {

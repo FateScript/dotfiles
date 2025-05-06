@@ -75,6 +75,7 @@ git_branch_push() {
     fi
 
     # NOTE: using "$commit_hash:refs/heads/$remote_branch" will triger colon modifiers in zsh
+    # check https://stackoverflow.com/questions/55604684/colon-with-r-in-string-not-working-as-desired-under-zsh
     git push "$remote" "${commit_hash}:refs/heads/${remote_branch}"
 }
 

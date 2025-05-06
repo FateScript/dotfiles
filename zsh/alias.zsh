@@ -89,6 +89,7 @@ alias tarzip="tar -zcvf"
 alias tarunzip="tar -zxvf"
 
 # system
+alias watch='watch '  # allow watching an alias in some cases
 alias cn_tz="TZ=Asia/Shanghai date"  # cn time zone
 alias zh_cn="LC_ALL='zh_CN.UTF-8'"  # encode
 alias cursor="echo -e '\033[?25h'"
@@ -163,6 +164,7 @@ alias ghd="git hide"
 alias guhd="git unhide"
 alias ggo="git sw -i"  # git go to switch commit when using branchless
 alias gsp="git_branch_push"  # short for super push, used for git branchless
+alias gsy="git sync --all"
 
 # cargo
 alias install_delta="cargo install git-delta"
