@@ -39,7 +39,7 @@ bluetooth_name() {
 }
 
 _bluetooth_device() {
-	choices=`bluetooth_name`
-	suf=( -S '' )
-	_arguments -O suf "*:value:( $choices )"
+  local -a choices
+  choices=("${(@f)$(bluetooth_name)}")
+  _describe -t devices 'Bluetooth Devices' choices
 }

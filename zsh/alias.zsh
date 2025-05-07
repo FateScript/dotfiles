@@ -173,6 +173,10 @@ alias install_branchless="cargo install --locked git-branchless"
 # curl
 alias install_ollama="curl -fsSL https://ollama.com/install.sh | sh"
 
+# device
+alias bluetooth_on="blueutil --power 1"
+alias bluetooth_off="blueutil --power 0"
+
 # download
 alias vget="you-get"
 alias vgetl="you-get --playlist"
