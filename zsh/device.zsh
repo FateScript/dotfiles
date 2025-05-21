@@ -43,3 +43,34 @@ _bluetooth_device() {
   choices=("${(@f)$(bluetooth_name)}")
   _describe -t devices 'Bluetooth Devices' choices
 }
+
+check_port() {
+  if [[ -z "$1" ]]; then
+    echo "Usage: check_port <port_number>"
+    return 1
+  fi
+
+  local port="$1"
+  local output
+
+  output=$(lsof -iTCP:"$port" -sTCP:LISTEN -n -P 2>/dev/null)
+
+  if [[ -z "$output" ]]; then
+    echo "Port $port is not being used."
+  else
+    echo "Port $port is in use by the following process:"
+    echo "$output"
+  fi
+}
+
+list_ports() {
+  echo -e "Proto\tLocal Address\t\tPID/Program name"
+  sudo lsof -i -P -n | awk '
+    NR==1 {next} # skip header
+    {
+      split($9, addr, ":")
+      port = addr[length(addr)]
+      printf "%s\t%s\t%s/%s\n", $8, $9, $2, $1
+    }
+  ' | sort -u
+}

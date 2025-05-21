@@ -129,6 +129,7 @@ alias pip_tuna="pip install -i https://pypi.tuna.tsinghua.edu.cn/simple"
 alias pip_ins="pip install -v -e ."
 alias pip_ins_compat="pip install -e . --config-settings editable_mode=compat"
 alias pdbtest="pytest --pdb --pdbcls=IPython.terminal.debugger:Pdb -s"
+alias extest="pytest --pdb --pdbcls=pytoolzen.debugger.ex_pdb:ExPdb -s"
 alias nb2py="jupyter nbconvert --to script"
 
 alias upip="uv pip"

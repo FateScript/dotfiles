@@ -5,3 +5,5 @@
 alias -g NN='>/dev/null 2>&1'
 # safe_export_path "/opt/homebrew/bin/" NN  # for homebrew users
 safe_export_path "$HOME/.local/bin" NN  # for self used bin file
+
+alias chrome='open -a "Google Chrome"'

@@ -568,3 +568,19 @@ _sftp_upload() {
             ;;
     esac
 }
+
+pretty_curl() {
+    local url=$1
+
+    if [[ -z "$url" ]]; then
+        echo "Usage: pretty_curl <url>"
+        return 1
+    fi
+
+    if ! command -v jq &> /dev/null; then
+        echo "Error: 'jq' is not installed. Please install jq to use this function."
+        return 1
+    fi
+
+    curl -s "$url" | jq .
+}
