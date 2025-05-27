@@ -44,12 +44,19 @@ git_branch_push() {
     local remote="origin"
     local commit_hash=""
     local remote_branch=""
+    local -a push_opts=()
+
+    # Parse flags (anything starting with - or --)
+    while [[ "$1" == -* ]]; do
+        push_opts+=("$1")
+        shift
+    done
 
     if [[ $# -eq 1 ]]; then
         remote_branch="$1"
         commit_hash=$(git rev-parse HEAD)
     elif [[ $# -eq 2 ]]; then
-        if git remote get-url "$1" &>/dev/null; then
+        if git remote get-url "$1" &> /dev/null; then
             remote="$1"
             remote_branch="$2"
             commit_hash=$(git rev-parse HEAD)
@@ -63,9 +70,9 @@ git_branch_push() {
         remote_branch="$3"
     else
         echo "Usage:"
-        echo "    git_branch_push remote-branch"
-        echo "    git_branch_push [remote|commit-hash] remote-branch"
-        echo "    git_branch_push remote commit-hash remote-branch"
+        echo "    git_branch_push [-f|--force|...] remote-branch"
+        echo "    git_branch_push [-f|--force|...] [remote|commit-hash] remote-branch"
+        echo "    git_branch_push [-f|--force|...] remote commit-hash remote-branch"
         return 1
     fi
 
@@ -76,7 +83,7 @@ git_branch_push() {
 
     # NOTE: using "$commit_hash:refs/heads/$remote_branch" will triger colon modifiers in zsh
     # check https://stackoverflow.com/questions/55604684/colon-with-r-in-string-not-working-as-desired-under-zsh
-    git push "$remote" "${commit_hash}:refs/heads/${remote_branch}"
+    git push "${push_opts[@]}" "$remote" "${commit_hash}:refs/heads/${remote_branch}"
 }
 
 
@@ -190,4 +197,10 @@ Please generate a concise, one-line commit message for these changes.
                 ;;
         esac
     done
+}
+
+git_rebase_n() {
+    local count="$1"
+    shift
+    git rebase -i "HEAD~$count" "$@"
 }

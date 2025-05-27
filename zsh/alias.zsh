@@ -132,8 +132,10 @@ alias pdbtest="pytest --pdb --pdbcls=IPython.terminal.debugger:Pdb -s"
 alias extest="pytest --pdb --pdbcls=pytoolzen.debugger.ex_pdb:ExPdb -s"
 alias nb2py="jupyter nbconvert --to script"
 
+# uv
 alias upip="uv pip"
-alias usrc="source .venv/bin/activate"
+alias upy_ins="uv python install"
+alias upy_ins="uv python list"
 
 # git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more
 alias gmm="git commit --amend"  # git message modification
@@ -145,6 +147,7 @@ alias git_ls_unreachable='git fsck --unreachable --no-reflog'
 alias gsbi="git submodule update --init --recursive"
 alias gign="git ls-files --others --ignored --exclude-standard"
 alias gclean_check="git clean -nd"
+alias grbn="git_rebase_n"
 
 # git proxy
 alias git_proxy_on='git config --global http.proxy 127.0.0.1:7890 && git config --global https.proxy 127.0.0.1:7890'

@@ -5,6 +5,8 @@ autoload -U compinit && compinit -u
 compdef _src src
 compdef _conf conf
 compdef _act_venv act_venv rm_venv
+compdef _create_venv create_venv
+
 compdef _bluetooth_device bluetooth_conn bluetooth_disconn
 compdef _sftp_upload sftp_upload
 
