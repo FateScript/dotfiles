@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+
+import json
+import requests
+from typing import List, Callable
+from pprint import pprint
+
+
+class TagTree:
+    def __init__(self, split_fn=lambda x: x.split("/")):
+        self.root = {}
+        self.split_fn = split_fn
+
+    def add_tag(self, tag, value=None):
+        parts = self.split_fn(tag)
+        node = self.root
+        for part in parts[:-1]:
+            if node.get(part, None) is None:
+                node[part] = {}
+            node = node[part]
+        node[parts[-1]] = value
+
+    def __repr__(self):
+        return json.dumps(self.root, indent=2)
+
+    def get_tree(self):
+        return self.root
+
+    def count_node(self, depth: int = 0, sort_by_value: bool = True, exclude_func: Callable = lambda x: False):
+        """
+        Count the number of nodes in the tree at a given depth.
+        """
+        count_result = []
+
+        def count(node, current_depth: int, path: str = ""):
+            if node is None:
+                return 1
+
+            node_count = 0
+            for k in node.keys():
+                if exclude_func(k):
+                    continue
+                node_count += count(node[k], current_depth + 1, path=f"{path}/{k}" if path else k)
+
+            if current_depth == depth:
+                count_result.append((path, node_count))
+
+            return node_count
+
+        count(self.root, current_depth=0)
+        if sort_by_value:
+            count_result = list(sorted(count_result, key=lambda x: x[1], reverse=True))
+        return count_result
+
+
+def tags_from_url_tensorboard_log(url: str, run_name: str = None) -> List[str]:
+    if run_name is None:
+        api_endpoint = f"{url}/data/plugin/scalars/tags"
+    else:
+        api_endpoint = f"{url}/data/plugin/scalars/tags?run={run_name}"
+
+    response = requests.get(api_endpoint)
+    if response.status_code == 200:
+        info = response.json()
+        if run_name is None:
+            run_name = list(info.keys())[0]
+        tags = info[run_name]
+        return list(tags.keys())
+    else:
+        print(f"Failed to fetch tags: {response.status_code}")
+        return []
+
+
+def run_names_from_url_tensorboard_log(url: str) -> List[str]:
+    """
+    Fetches run names from TensorBoard's REST API.
+    """
+    api_endpoint = f"{url}/data/runs"
+
+    try:
+        response = requests.get(api_endpoint)
+        response.raise_for_status()
+        data = response.json()
+        return data
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching run names: {e}")
+        return []
+    except json.JSONDecodeError:
+        print("Error decoding JSON response.")
+        return []
+
+
+def scalars_from_url(url: str, run_name: str, tag: str) -> List[List[float]]:
+    """
+    Fetches scalar data from TensorBoard's REST API.
+    """
+    api_endpoint = f"{url}/data/plugin/scalars/scalars?run={run_name}&tag={tag}"
+
+    try:
+        response = requests.get(api_endpoint)
+        response.raise_for_status()
+        data = json.loads(response.text)
+        return data  # returns a list of [wall_time_in_ms, step, value]
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data: {e}")
+        return []
+    except json.JSONDecodeError:
+        print("Error decoding JSON response.")
+        return []
+
+
+def scalar_value_at_step(url, run_name, metric_tag, target_step):
+    """
+    Fetches scalar data from TensorBoard's REST API and returns the value
+    for a specific metric at a given step.
+    """
+    if run_name is None:
+        run_name = run_names_from_url_tensorboard_log(url)[0]
+
+    data = scalars_from_url(url, run_name, metric_tag)
+    # data format: [wall_time_in_ms, step, value]
+    for entry in data:
+        if len(entry) == 3 and entry[1] == target_step:
+            return entry[2]  # return the value
+    return None  # step not found
+
+
+def tag_stat(url: str, runs: str = None, depth: int = 1):
+    tags = tags_from_url_tensorboard_log(url, runs)
+    tree = TagTree()
+    for tag in tags:
+        tree.add_tag(tag)
+
+    nodes = tree.count_node(depth=depth)
+    print(f"Depth {depth}: {len(nodes)} suffix")
+    pprint(nodes)
+
+
+def prob_metric(
+    url: str,
+    run_name: str = None,
+    metric_name: str = None,
+    step: str = None,
+):
+    value = scalar_value_at_step(url, run_name, metric_name, step)
+    if value is None:
+        print(f"No data found for metric '{metric_name}' at step {step}.")
+    else:
+        print(f"Value at step {step} for metric '{metric_name}': {value}")
+
+
+def list_run_names(url: str):
+    runs = run_names_from_url_tensorboard_log(url)
+    print(f"Total {len(runs)} Runs:")
+    for name in runs:
+        print(name)
+
+
+if __name__ == '__main__':
+    import fire
+    # url should be something like: 'http://localhost:12323
+    fire.Fire({
+        "tags": tag_stat,
+        "runs": list_run_names,
+        "prob": prob_metric,
+    })

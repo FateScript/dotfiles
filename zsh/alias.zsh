@@ -135,7 +135,8 @@ alias nb2py="jupyter nbconvert --to script"
 # uv
 alias upip="uv pip"
 alias upy_ins="uv python install"
-alias upy_ins="uv python list"
+alias upy_list="uv python list"
+alias upy_set="uv python pin"  # for example, upy_set 3.10
 
 # git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more
 alias gmm="git commit --amend"  # git message modification
@@ -148,6 +149,7 @@ alias gsbi="git submodule update --init --recursive"
 alias gign="git ls-files --others --ignored --exclude-standard"
 alias gclean_check="git clean -nd"
 alias grbn="git_rebase_n"
+alias grevf="git checkout HEAD^ --"  # revert a file
 
 # git proxy
 alias git_proxy_on='git config --global http.proxy 127.0.0.1:7890 && git config --global https.proxy 127.0.0.1:7890'
