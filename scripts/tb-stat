@@ -1,9 +1,85 @@
 #!/usr/bin/env python3
 
+from __future__ import annotations
+
+import concurrent
+import concurrent.futures
 import json
-import requests
-from typing import List, Callable
+import math
+import random
+import string
+import tempfile
 from pprint import pprint
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+import requests
+from tqdm import tqdm
+
+
+def is_nan(value: float) -> bool:
+    return math.isnan(value)
+
+
+def step_to_slice(step: str) -> slice:
+    start, end = step.split(":")
+    start = int(start) if start else None
+    end = int(end) if end else None
+    return slice(start, end)
+
+
+# copy from pytoolzen
+def concurrent_process(
+    process_func: Callable,
+    items: List[Any],
+    num_workers: int = 4,
+    chunk_size: Optional[int] = None,
+    chunk_func: Optional[Callable] = None,
+    multi_args: bool = False,
+    backend: str = "thread",
+) -> List[Any]:
+    """
+    Args:
+        process_func: function to process the item
+        items (List): list of items to process, each item should be a tuple if multi_args is True.
+        num_workers (int, optional): workers to execute the process function. Defaults to 4.
+        chunk_size (int, optional): chunk size to split the items.
+            Defaults to None, which means no split.
+        chunk_func (Callable, optional): function to process the chunk results.
+        multi_args (bool, optional): whether the items should be treated as multi arguments
+            of the function. Defaults to False.
+        backend (str, optional): backend to execute the process function,
+            should be "thread" or "process". Defaults to "thread".
+            Note that "thread" backend is recommended for io-bound tasks,
+            and "process" backend is recommended for cpu-bound tasks.
+    """
+    assert backend in ["thread", "process"], f"Invalid backend: {backend}."
+    item_len = len(items)
+    if item_len == 0:
+        return []
+    num_workers = min(num_workers, item_len)
+    if chunk_size is None:
+        chunk_size = item_len
+    chunk_size = min(chunk_size, item_len)
+
+    backend_class = concurrent.futures.ThreadPoolExecutor if backend == "thread" else concurrent.futures.ProcessPoolExecutor  # noqa
+
+    process_results = []
+    for i in tqdm(range(0, item_len, chunk_size), leave=False):
+        part_items = items[i:i + chunk_size]
+        func_args = tuple(zip(*part_items)) if multi_args else (part_items,)
+        with backend_class(max_workers=num_workers) as executor:
+            results = list(
+                tqdm(
+                    executor.map(process_func, *func_args),
+                    desc=f"Sample {i}->{min(i+chunk_size, item_len)}",
+                    total=len(part_items),
+                    leave=False,
+                )
+            )
+        process_results.extend(results)
+        if chunk_func is not None:
+            chunk_func(results)
+    return process_results
 
 
 class TagTree:
@@ -53,80 +129,198 @@ class TagTree:
         return count_result
 
 
-def tags_from_url_tensorboard_log(url: str, run_name: str = None) -> List[str]:
-    if run_name is None:
-        api_endpoint = f"{url}/data/plugin/scalars/tags"
-    else:
-        api_endpoint = f"{url}/data/plugin/scalars/tags?run={run_name}"
+class TensorboardService:
 
-    response = requests.get(api_endpoint)
-    if response.status_code == 200:
-        info = response.json()
+    def __init__(self, url: str):
+        """
+        Args:
+            base_url (str): Tensoroard URL, e.g.: http://localhost:12123
+        """
+        self.url = url.rstrip("/")
+        self.host = self.url.split("/")[2]
+        self.headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-Fetch-Dest": "empty",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Sec-Fetch-Mode": "cors",
+            "Host": self.host,
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15",
+            "Referer": self.url,
+            "Connection": "keep-alive",
+        }
+
+    def fetch(
+        self,
+        partial_url: str,
+        method: str = "GET",
+        data: Any = None,
+        headers: Dict | None = None
+    ):
+        """
+        Sends an HTTP request to the specified partial URL using the given method.
+
+        Args:
+            partial_url (str): The partial endpoint URL (e.g., '/data/runs').
+            method (str, optional): HTTP method to use, either "GET" or "POST". Defaults to "GET".
+            data (Any, optional): Data to send in the request body for POST requests.
+                Defaults to None.
+            headers (dict, optional): Additional headers to include or override default headers.
+                Defaults to None.
+
+        Returns:
+            dict: The JSON response from the server.
+
+        Raises:
+            requests.HTTPError: If the HTTP request returned an unsuccessful status code.
+            Exception: If the response cannot be parsed as JSON.
+        """
+        endpoint = f"{self.url}{partial_url}"
+        req_headers = self.headers.copy()
+        if headers:
+            req_headers.update(headers)
+        if method.upper() == "POST":
+            response = requests.post(endpoint, headers=req_headers, data=data)
+        else:
+            response = requests.get(endpoint, headers=req_headers)
+        response.raise_for_status()
+        try:
+            return response.json()
+        except Exception as e:
+            raise e
+
+    @property
+    def runs(self) -> List[str]:
+        """Get all runs, sorted by name"""
+        return sorted(self.fetch("/data/runs"))
+
+    @property
+    def tags(self) -> Dict[str, Dict]:
+        return self.fetch("/data/plugin/scalars/tags")
+
+    def ensure_run_name(self) -> str:
+        available_runs = self.runs
+        assert len(available_runs) == 1, f"Please selected runs from {available_runs}"
+        return available_runs[0]
+
+    def tags_in_run(self, run_name: str | None = None) -> List[str]:
         if run_name is None:
-            run_name = list(info.keys())[0]
-        tags = info[run_name]
-        return list(tags.keys())
-    else:
-        print(f"Failed to fetch tags: {response.status_code}")
-        return []
+            run_name = self.ensure_run_name()
+        all_run_tags = self.tags
+        return list(all_run_tags[run_name].keys())
 
+    @classmethod
+    def generate_body_content_type(cls, fields) -> Tuple[str, str]:
+        boundary = "----WebKitFormBoundary" + "".join(
+            random.sample(string.ascii_letters + string.digits, 16)
+        )
+        content_type = "multipart/form-data; boundary=" + boundary
+        # Build multipart/form-data body manually
 
-def run_names_from_url_tensorboard_log(url: str) -> List[str]:
-    """
-    Fetches run names from TensorBoard's REST API.
-    """
-    api_endpoint = f"{url}/data/runs"
+        lines = []
+        for key, value in fields:
+            lines.append(f"--{boundary}")
+            lines.append(f'Content-Disposition: form-data; name="{key}"')
+            lines.append("")
+            lines.append(str(value))
+        lines.append(f"--{boundary}--")
+        lines.append("")
+        body = "\r\n".join(lines)
+        return body.encode("utf-8"), content_type
 
-    try:
-        response = requests.get(api_endpoint)
-        response.raise_for_status()
-        data = response.json()
+    def time_series(self, run_ids: List[str], tag: str):
+        """
+        Args:
+            run_ids (list): List of run ids.
+            tag (str): Tag name, e.g. "loss".
+        """
+        fields = [("requests", json.dumps([{"plugin": "scalars", "tag": tag}]))]
+        body, content_type = self.generate_body_content_type(fields)
+        data = self.fetch(
+            "/experiment/defaultExperimentId/data/plugin/timeseries/timeSeries",
+            method="POST", data=body, headers={"Content-Type": content_type},
+        )
+        data = data[0]["runToSeries"]
+        data = {run_id: obj for run_id, obj in data.items() if run_id in run_ids}
+        for run_id in data:
+            series = data[run_id]
+            for i, arr in enumerate(series):
+                series[i] = [float(arr[x]) for x in ["wallTime", "step", "value"]]
         return data
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching run names: {e}")
-        return []
-    except json.JSONDecodeError:
-        print("Error decoding JSON response.")
-        return []
+
+    def scalars_in_run(self, tag, run_id: str | None = None) -> List:
+        if run_id is None:
+            run_id = self.ensure_run_name()
+        scalars = self.scalars_multirun(tag, [run_id])
+        return scalars[run_id]
+
+    def scalars_multirun(self, tag: str, run_ids: List | None = None) -> Dict[str, List]:
+        """
+        Args:
+            tag (str): The tag name, e.g., "loss".
+            run_ids (List, optional): List of run ids. If None, uses the default run.
+        """
+        if run_ids is None:
+            run_ids = [self.ensure_run_name()]
+
+        fields = [("tag", tag)]
+        for run_id in run_ids:
+            fields.append(("runs", run_id))
+
+        body, content_type = self.generate_body_content_type(fields)
+        data = self.fetch(
+            "/data/plugin/scalars/scalars_multirun",
+            method="POST", data=body,
+            headers={"Content-Type": content_type},
+        )
+        for run_id in data:
+            series = data[run_id]
+            for i in range(len(series)):
+                series[i] = [float(x) for x in series[i]]
+        return data
 
 
-def scalars_from_url(url: str, run_name: str, tag: str) -> List[List[float]]:
-    """
-    Fetches scalar data from TensorBoard's REST API.
-    """
-    api_endpoint = f"{url}/data/plugin/scalars/scalars?run={run_name}&tag={tag}"
-
-    try:
-        response = requests.get(api_endpoint)
-        response.raise_for_status()
-        data = json.loads(response.text)
-        return data  # returns a list of [wall_time_in_ms, step, value]
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data: {e}")
-        return []
-    except json.JSONDecodeError:
-        print("Error decoding JSON response.")
-        return []
-
-
-def scalar_value_at_step(url, run_name, metric_tag, target_step):
-    """
-    Fetches scalar data from TensorBoard's REST API and returns the value
-    for a specific metric at a given step.
-    """
+def scalars_by_step(
+    url: str,
+    tag: str,
+    step: str,
+    run_name: str | None = None
+) -> List[Tuple[float, int]]:
+    api = TensorboardService(url)
     if run_name is None:
-        run_name = run_names_from_url_tensorboard_log(url)[0]
+        run_name = api.ensure_run_name()
 
-    data = scalars_from_url(url, run_name, metric_tag)
-    # data format: [wall_time_in_ms, step, value]
-    for entry in data:
-        if len(entry) == 3 and entry[1] == target_step:
-            return entry[2]  # return the value
-    return None  # step not found
+    data = api.scalars_in_run(tag, run_id=run_name)
+    try:
+        if "-" in step:
+            start, end = step.split("-")
+            start, end = int(start), int(end)
+            value_steps = [(x[2], int(x[1])) for x in data if x[1] >= start and x[1] <= end]
+            if not value_steps:
+                max_step, min_step = max(x[1] for x in data), min(x[1] for x in data)
+                print(f"Index range should be: {int(min_step)}-{int(max_step)}")
+        elif ":" in step:
+            step: slice = step_to_slice(step)
+            value_steps = [(x[2], int(x[1])) for x in data[step]]
+        else:
+            value_steps = [data[step][2], step]
+    except Exception as e:
+        print(f"Error fetching data for tag {tag} at step {step} in run {run_name}: {e}")
+        return []
+
+    return value_steps
 
 
-def tag_stat(url: str, runs: str = None, depth: int = 1):
-    tags = tags_from_url_tensorboard_log(url, runs)
+def list_run_names(url: str):
+    api = TensorboardService(url)
+    pprint(api.runs)
+
+
+def tag_stat(url: str, run_name: str | None = None, depth: int = 1):
+    api = TensorboardService(url)
+    if run_name is None:
+        run_name = api.ensure_run_name()
+    tags = api.tags_in_run(run_name)
     tree = TagTree()
     for tag in tags:
         tree.add_tag(tag)
@@ -136,31 +330,79 @@ def tag_stat(url: str, runs: str = None, depth: int = 1):
     pprint(nodes)
 
 
-def prob_metric(
+def prob_metric(url: str, tag: str, step: str, run_name: str | None = None):
+    value_steps = scalars_by_step(url, tag, step, run_name=run_name)
+
+    print(f"Tag: {tag}, Run: {run_name}, Step: {step}")
+    for value, idx in value_steps:
+        print(f"Value at step {idx}: {value}")
+
+
+def check_metrics(
     url: str,
-    run_name: str = None,
-    metric_name: str = None,
-    step: str = None,
+    run_name: str | None = None,
+    value: float = float("nan"),
+    num_workers: int = 32,
 ):
-    value = scalar_value_at_step(url, run_name, metric_name, step)
-    if value is None:
-        print(f"No data found for metric '{metric_name}' at step {step}.")
-    else:
-        print(f"Value at step {step} for metric '{metric_name}': {value}")
+    api = TensorboardService(url)
+    if run_name is None:
+        run_name = api.ensure_run_name()
+
+    check_func = is_nan if is_nan(value) else lambda x: x == value
+
+    def check_tag(t):
+        data = api.scalars_in_run(t, run_id=run_name)[:10]
+        if all([check_func(x[2]) for x in data]):
+            print(f"Find {t}")
+            return t
+
+    tags = api.tags_in_run(run_name=run_name)
+    prefix = int(len(tags) * 0.3)
+    tags = tags[prefix:]
+
+    values = concurrent_process(check_tag, tags, num_workers=num_workers)
+    for v in values:
+        if v is not None:
+            print(v)
 
 
-def list_run_names(url: str):
-    runs = run_names_from_url_tensorboard_log(url)
-    print(f"Total {len(runs)} Runs:")
-    for name in runs:
-        print(name)
+def plot_sclars(
+    url: str,
+    tag: str,
+    step: str | None = None,
+    run_name: str | None = None,
+):
+    import matplotlib.pyplot as plt
+    from imgcat import imgcat
+
+    value_steps = scalars_by_step(url, tag, step, run_name=run_name)
+    if not value_steps:
+        print("No data to plot.")
+        return
+
+    values, steps = zip(*value_steps)
+    plt.figure(figsize=(10, 5))
+    plt.plot(steps, values, marker='o')
+    plt.xlabel("Step")
+    plt.ylabel("Value")
+    plt.title(f"Tag: {tag} ({run_name})")
+    plt.grid(True)
+    plt.tight_layout()
+
+    with tempfile.NamedTemporaryFile(suffix=".png") as tmpfile:
+        plt.savefig(tmpfile.name)
+        with open(tmpfile.name, mode="rb") as fp:
+            content = fp.read()
+        imgcat(content)
+    plt.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import fire
-    # url should be something like: 'http://localhost:12323
     fire.Fire({
         "tags": tag_stat,
         "runs": list_run_names,
         "prob": prob_metric,
+        "plot": plot_sclars,
+        "check": check_metrics,
     })
