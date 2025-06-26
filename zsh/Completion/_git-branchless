@@ -1,0 +1,554 @@
+#compdef git-branchless
+# description:git-branchless completion script
+
+_git_revset() {
+  # reference: https://github.com/arxanas/git-branchless/wiki/Reference:-Revsets
+  local items=(
+    "'all()'"
+    "'none()'"
+    "'union(x, y)'"
+    "'intersection(x, y)'"
+    "'difference(x, y)'"
+    "'only(x, y)'"
+    "'range(x, y)'"
+    "'ancestors(x)'"
+    "'ancestors.nth(x, n)'"
+    "'descendants(x)'"
+    "'parents(x)'"
+    "'parents.nth(x, n)'"
+    "'children(x)'"
+    "'roots(x)'"
+    "'heads(x)'"
+    "'merges()'"
+    "'main()'"
+    "'public()'"
+    "'draft()'"
+    "'stack([x])'"
+    "'branches([text-pattern])'"
+    "'message(text-pattern)'"
+    "'paths.changed(text-pattern)'"
+    "'author.name(text-pattern)'"
+    "'author.email(text-pattern)'"
+    "'author.date(date-pattern)'"
+    "'committer.name(text-pattern)'"
+    "'committer.email(text-pattern)'"
+    "'committer.date(date-pattern)'"
+    "'exactly(x, n)'"
+    "'current(x)'"
+    "'tests.passed([test-command-pattern])'"
+    "'tests.failed([test-command-pattern])'"
+    "'tests.fixable([test-command-pattern])'"
+  )
+  local desc=(
+    "all(): all visible commits"
+    "none(): the empty set of commits"
+    "union(x, y): all commits that are in either x or y"
+    "intersection(x, y): all commits that are in both x and y"
+    "difference(x, y): all commits that are in x but not in y"
+    "only(x, y): all commits which are ancestors of x, but not ancestors of y"
+    "range(x, y): all commits which are both descendants of x and ancestors of y"
+    "ancestors(x): all commits which are ancestors of commits in x (includes x itself)"
+    "ancestors.nth(x, n): the nth generation ancestor of x, following only the first parents (~n)"
+    "descendants(x): all commits which are descendants of commits in x (includes x itself)"
+    "parents(x): all commits which are an immediate parent of a commit in x"
+    "parents.nth(x, n): the nth parent of x (^n)"
+    "children(x): all commits which are an immediate child of a commit in x"
+    "roots(x): all commits in x which have no immediate ancestors also in x"
+    "heads(x): all commits in x which have no immediate descendants also in x"
+    "merges(): all merge commits (since v0.9.0)"
+    "main(): the main branch commit (since v0.6.0)"
+    "public(): all public commits (same as ancestors(main())) (since v0.6.0)"
+    "draft(): all draft commits"
+    "stack([x]): all draft commits in the commit stack containing x (default: HEAD)"
+    "branches([text-pattern]): all commits with branches pointing to them (pattern optional, since v0.9.0)"
+    "message(text-pattern): all commits whose messages match the specified pattern"
+    "paths.changed(text-pattern): all commits with a changed file path matching the specified pattern"
+    "author.name(text-pattern): all commits whose author name matches the specified pattern"
+    "author.email(text-pattern): all commits whose author email matches the specified pattern"
+    "author.date(date-pattern): all commits whose author date matches the specified pattern"
+    "committer.name(text-pattern): all commits whose committer name matches the specified pattern"
+    "committer.email(text-pattern): all commits whose committer email matches the specified pattern"
+    "committer.date(date-pattern): all commits whose committer date matches the specified pattern"
+    "exactly(x, n): all commits in x, but only if x contains exactly n commits (since v0.5.0)"
+    "current(x): the current version of all commits in x (since v0.6.0)"
+    "tests.passed([test-command-pattern]): all commits whose most recent test run for the specified test command passed (since v0.7.0)"
+    "tests.failed([test-command-pattern]): all commits whose most recent test run for the specified test command failed (since v0.7.0)"
+    "tests.fixable([test-command-pattern]): all commits whose most recent test run for the specified test command wrote output to the working copy (since v0.7.0)"
+  )
+  compadd -Q -V "revset_functions" -S '' -d desc -- "${items[@]}"
+}
+
+_git_commit_with_message() {
+  local -a commits
+  local line hash msg
+
+  while IFS= read -r line; do
+    hash="${line%% *}"
+    msg="${line#* }"
+    commits+=("$hash:$msg")
+  done < <(git-branchless query "((draft() | branches() | @) % main()) | branches() | @" 2>/dev/null)
+  # above revset from https://github.com/arxanas/git-branchless/wiki/Command:-git-smartlog
+  _describe -t commits 'commits' commits
+}
+
+_git_commit_and_revset() {
+  _git_commit_with_message
+  _git_revset
+}
+
+_git_shared_opts() {
+  local -a opts
+  opts=(
+    "-C:change to the given directory before executing the rest of the program"
+    "--color:flag to force enable or disable terminal colors (auto|always|never)"
+    "-h:print help (see a summary with '-h')"
+    "--help:print help (see a summary with '-h')"
+  )
+  _describe -t options 'shared options' opts
+}
+
+_git_hide_unhide_opts() {
+  local -a opts
+  opts=(
+    "--hidden:Include hidden commits in the results of evaluating revset expressions"
+    "--no-delete-branches:Don't delete branches that point to commits that would be hidden. (Those commits will remain visible as a result.)"
+    "-r:Also recursively hide all visible children commits of the provided commits"
+    "--recursive:Also recursively hide all visible children commits of the provided commits"
+  )
+  _describe -t options 'hide_unhide options' opts
+  _git_shared_opts
+}
+
+
+_git_prev_next_opts() {
+  local -a opts
+  opts=(
+    "-a:Traverse as many commits as possible"
+    "--all:Traverse as many commits as possible"
+    "-b:Move the specified number of branches rather than commits"
+    "--branch:Move the specified number of branches rather than commits"
+    "-o:When encountering multiple next commits, choose the oldest"
+    "--oldest:When encountering multiple next commits, choose the oldest"
+    "-n:When encountering multiple next commits, choose the newest"
+    "--newest:When encountering multiple next commits, choose the newest"
+    "-i:When encountering multiple next commits, interactively prompt which to advance to"
+    "--interactive:When encountering multiple next commits, interactively prompt which to advance to"
+    "-m:If the local changes conflict with the destination commit, attempt to merge them"
+    "--merge:If the local changes conflict with the destination commit, attempt to merge them"
+    "-f:If the local changes conflict with the destination commit, discard them. (Use with caution!)"
+    "--force:If the local changes conflict with the destination commit, discard them. (Use with caution!)"
+  )
+  _describe -t options 'prev_next options' opts
+  _git_shared_opts
+}
+
+
+_git_amend_opts() {
+  local -a opts
+  opts=(
+    "--fr:alias for --force-rewrite"
+    "-f:Force moving public commits, even though other people may have access to those commits"
+    "--force-rewrite:Force moving public commits, even though other people may have access to those commits"
+    "--in-memory:Only attempt to perform an in-memory rebase. If it fails, do not attempt an on-disk rebase"
+    "--on-disk:Skip attempting to use an in-memory rebase, and try an on-disk rebase directly"
+    "--no-deduplicate-commits:Don't attempt to deduplicate commits. Normally, a commit with the same contents as another commit which has already been applied to the target branch is skipped. If set, this flag skips that check"
+    "-m:Attempt to resolve merge conflicts, if any. If a merge conflict occurs and this option is not set, the operation is aborted"
+    "--merge:Attempt to resolve merge conflicts, if any. If a merge conflict occurs and this option is not set, the operation is aborted"
+    "--debug-dump-rebase-constraints:Debugging option. Print the constraints used to create the rebase plan before executing it"
+    "--debug-dump-rebase-plan:Debugging option. Print the rebase plan that will be executed before executing it"
+    "--reparent:Modify the contents of the current HEAD commit, but keep all contents of descendant commits exactly the same (i.e. "reparent" them). This can be useful when applying formatting or refactoring changes"
+  )
+  _describe -t options 'amend options' opts
+  _git_shared_opts
+}
+
+
+_git_difftool_opts() {
+  local -a opts
+  opts=(
+    "-d:Instead of comparing two files, compare two directories recursively"
+    "--dir-diff:Instead of comparing two files, compare two directories recursively"
+    "--read-only:Disable all editing controls and do not write the selected commit contents to disk"
+    "-N:Show what would have been written to disk as part of the commit selection, but do not actually write it"
+    "--dry-run:Show what would have been written to disk as part of the commit selection, but do not actually write it"
+    "-b:Render the interface as a mergetool instead of a difftool and use this file as the base of a three-way diff as part of resolving merge conflicts"
+    "--base:Render the interface as a mergetool instead of a difftool and use this file as the base of a three-way diff as part of resolving merge conflicts"
+    "-o:Write the resolved merge conflicts to this file"
+    "--output:Write the resolved merge conflicts to this file"
+  )
+  _describe -t options 'difftool options' opts
+  _git_shared_opts
+}
+
+
+_git_init_opts() {
+  local -a opts
+  opts=(
+    "--uninstall:Uninstall the branchless workflow instead of initializing it"
+    "--main-branch:Use the provided name as the name of the main branch.  If not set, it will be auto-detected. If it can't be auto-detected, then you will be prompted to enter a value for the main branch name."
+  )
+  _describe -t options 'init options' opts
+  _git_shared_opts
+}
+
+
+_git_move_opts() {
+  local -a opts
+  opts=(
+    "-s:The source commit to move. This commit, and all of its descendants, will be moved"
+    "--source:The source commit to move. This commit, and all of its descendants, will be moved"
+    "-b:A commit inside a subtree to move. The entire subtree, starting from the main branch, will be moved, not just the commits descending from this commit"
+    "--base:A commit inside a subtree to move. The entire subtree, starting from the main branch, will be moved, not just the commits descending from this commit"
+    "-x:A set of specific commits to move. These will be removed from their current locations and any unmoved children will be moved to their nearest unmoved ancestor"
+    "--exact:A set of specific commits to move. These will be removed from their current locations and any unmoved children will be moved to their nearest unmoved ancestor"
+    "-d:The destination commit to move all source commits onto. If not provided, defaults to the current commit"
+    "--dest:The destination commit to move all source commits onto. If not provided, defaults to the current commit"
+    "--hidden:Include hidden commits in the results of evaluating revset expressions"
+    "--fr:alias for --force-rewrite"
+    "-f:Force moving public commits, even though other people may have access to those commits"
+    "--force-rewrite:Force moving public commits, even though other people may have access to those commits"
+    "--in-memory:Only attempt to perform an in-memory rebase. If it fails, do not attempt an on-disk rebase"
+    "--on-disk:Skip attempting to use an in-memory rebase, and try an on-disk rebase directly"
+    "--no-deduplicate-commits:Don't attempt to deduplicate commits. Normally, a commit with the same contents as another commit which has already been applied to the target branch is skipped. If set, this flag skips that check"
+    "-m:Attempt to resolve merge conflicts, if any. If a merge conflict occurs and this option is not set, the operation is aborted"
+    "--merge:Attempt to resolve merge conflicts, if any. If a merge conflict occurs and this option is not set, the operation is aborted"
+    "--debug-dump-rebase-constraints:Debugging option. Print the constraints used to create the rebase plan before executing it"
+    "--debug-dump-rebase-plan:Debugging option. Print the rebase plan that will be executed before executing it"
+    "-F:Combine the moved commits and squash them into the destination commit"
+    "--fixup:Combine the moved commits and squash them into the destination commit"
+    "-I:Insert the subtree between the destination and it's children, if any. Only supported if the moved subtree has a single head"
+    "--insert:Insert the subtree between the destination and it's children, if any. Only supported if the moved subtree has a single head"
+  )
+  _describe -t options 'move options' opts
+  _git_shared_opts
+}
+
+
+_git_query_opts() {
+  local -a opts
+  opts=(
+    "--hidden:Include hidden commits in the results of evaluating revset expressions"
+    "-b:Print the branches attached to the resulting commits, rather than the commits themselves"
+    "--branches:Print the branches attached to the resulting commits, rather than the commits themselves"
+    "-r:Print the OID of each matching commit, one per line. This output is stable for use in scripts"
+    "--raw:Print the OID of each matching commit, one per line. This output is stable for use in scripts"
+  )
+  _describe -t options 'query options' opts
+  _git_shared_opts
+}
+
+
+_git_record_opts() {
+  local -a opts
+  opts=(
+    "-m:The commit message to use. If not provided, will be prompted to provide a commit message interactively"
+    "--message:The commit message to use. If not provided, will be prompted to provide a commit message interactively"
+    "-i:Select changes to include interactively, rather than using the current staged/unstaged changes"
+    "--interactive:Select changes to include interactively, rather than using the current staged/unstaged changes"
+    "-c:Create and switch to a new branch with the given name before committing"
+    "--create:Create and switch to a new branch with the given name before committing"
+    "-d:Detach the current branch before committing"
+    "--detach:Detach the current branch before committing"
+    "-I:Insert the new commit between the current commit and its children, if any"
+    "--insert:Insert the new commit between the current commit and its children, if any"
+    "-s:After making the new commit, switch back to the previous commit"
+    "--stash:After making the new commit, switch back to the previous commit"
+  )
+  _describe -t options 'record options' opts
+  _git_shared_opts
+}
+
+
+_git_repair_opts() {
+  local -a opts
+  opts=(
+    "--no-dry-run:Apply changes"
+  )
+  _describe -t options 'repair options' opts
+  _git_shared_opts
+}
+
+
+_git_restack_opts() {
+  local -a opts
+  opts=(
+    "--hidden:Include hidden commits in the results of evaluating revset expressions"
+    "--fr:alias for --force-rewrite"
+    "-f:Force moving public commits, even though other people may have access to those commits"
+    "--force-rewrite:Force moving public commits, even though other people may have access to those commits"
+    "--in-memory:Only attempt to perform an in-memory rebase. If it fails, do not attempt an on-disk rebase"
+    "--on-disk:Skip attempting to use an in-memory rebase, and try an on-disk rebase directly"
+    "--no-deduplicate-commits:Don't attempt to deduplicate commits. Normally, a commit with the same contents as another commit which has already been applied to the target branch is skipped. If set, this flag skips that check"
+    "-m:Attempt to resolve merge conflicts, if any. If a merge conflict occurs and this option is not set, the operation is aborted"
+    "--merge:Attempt to resolve merge conflicts, if any. If a merge conflict occurs and this option is not set, the operation is aborted"
+    "--debug-dump-rebase-constraints:Debugging option. Print the constraints used to create the rebase plan before executing it"
+    "--debug-dump-rebase-plan:Debugging option. Print the rebase plan that will be executed before executing it"
+  )
+  _describe -t options 'restack options' opts
+  _git_shared_opts
+}
+
+
+_git_reword_opts() {
+  local -a opts
+  opts=(
+    "--hidden:Include hidden commits in the results of evaluating revset expressions"
+    "--fr:alias for --force-rewrite"
+    "-f:Force rewording public commits, even though other people may have access to those commits"
+    "--force-rewrite:Force rewording public commits, even though other people may have access to those commits"
+    "-m:Message to apply to commits. Multiple messages will be combined as separate paragraphs, similar to `git commit`"
+    "--message:Message to apply to commits. Multiple messages will be combined as separate paragraphs, similar to `git commit`"
+    "-d:Throw away the original commit messages.  If `commit.template` is set, then the editor is pre-populated with that; otherwise, the editor starts empty."
+    "--discard:Throw away the original commit messages.  If `commit.template` is set, then the editor is pre-populated with that; otherwise, the editor starts empty."
+    "--fixup:A commit to "fix up". The reworded commits will become `fixup!` commits (suitable for use with `git rebase --autosquash`) targeting the supplied commit"
+  )
+  _describe -t options 'reword options' opts
+  _git_shared_opts
+}
+
+
+_git_smartlog_opts() {
+  local -a opts
+  opts=(
+    "--event-id:The point in time at which to show the smartlog. If not provided, renders the smartlog as of the current time. If negative, is treated as an offset from the current event"
+    "--reverse:Print the smartlog in the opposite of the usual order, with the latest commits first"
+    "--exact:Don't automatically add HEAD and the main branch to the list of commits to present. They will still be added if included in the revset"
+    "--hidden:Include hidden commits in the results of evaluating revset expressions"
+  )
+  _describe -t options 'smartlog options' opts
+  _git_shared_opts
+}
+
+
+_git_submit_opts() {
+  local -a opts
+  opts=(
+    "--hidden:Include hidden commits in the results of evaluating revset expressions"
+    "-F:The Git hosting provider to use, called a "forge". If not provided, an attempt will be made to automatically detect the forge used by the repository. If no forge can be detected, will fall back to the "branch" forge  Possible values: - branch:      Force-push branches to the default push remote. You can configure the default push remote with `git config remote.pushDefault <remote>` - github:      Force-push branches to the remote and create a pull request for each branch using the `gh` command-line tool. WARNING: likely buggy! - phabricator: Submit code reviews to Phabricator using the `arc` command-line tool"
+    "--forge:The Git hosting provider to use, called a "forge". If not provided, an attempt will be made to automatically detect the forge used by the repository. If no forge can be detected, will fall back to the "branch" forge  Possible values: - branch:      Force-push branches to the default push remote. You can configure the default push remote with `git config remote.pushDefault <remote>` - github:      Force-push branches to the remote and create a pull request for each branch using the `gh` command-line tool. WARNING: likely buggy! - phabricator: Submit code reviews to Phabricator using the `arc` command-line tool"
+    "-c:If there is no associated remote commit or code review object for a given local commit, create the remote object by pushing the local commit to the forge"
+    "--create:If there is no associated remote commit or code review object for a given local commit, create the remote object by pushing the local commit to the forge"
+    "-d:If the forge supports it, create code reviews in "draft" mode"
+    "--draft:If the forge supports it, create code reviews in "draft" mode"
+    "-m:If the forge supports it, an optional message to include with the create or update operation"
+    "--message:If the forge supports it, an optional message to include with the create or update operation"
+    "-j:If the forge supports it, how many jobs to execute in parallel. The value `0` indicates to use all CPUs"
+    "--jobs:If the forge supports it, how many jobs to execute in parallel. The value `0` indicates to use all CPUs"
+    "-s:If the forge supports it and uses a tool that needs access to the working copy, what kind of execution strategy to use  Possible values: - working-copy: Default. Run the tests in the working copy. This requires a clean working copy. This is useful if you want to reuse build artifacts in the current directory - worktree:     Run the tests in a separate worktree (managed by git-branchless). This is useful if you want to run tests in parallel, or if you want to run tests on a different commit without invalidating build artifacts in the current directory, or if you want to run tests while your working copy is dirty"
+    "--strategy:If the forge supports it and uses a tool that needs access to the working copy, what kind of execution strategy to use  Possible values: - working-copy: Default. Run the tests in the working copy. This requires a clean working copy. This is useful if you want to reuse build artifacts in the current directory - worktree:     Run the tests in a separate worktree (managed by git-branchless). This is useful if you want to run tests in parallel, or if you want to run tests on a different commit without invalidating build artifacts in the current directory, or if you want to run tests while your working copy is dirty"
+    "-n:Don't push or create anything. Instead, report what would be pushed or created. (This may still trigger fetching information from the forge.)"
+    "--dry-run:Don't push or create anything. Instead, report what would be pushed or created. (This may still trigger fetching information from the forge.)"
+  )
+  _describe -t options 'submit options' opts
+  _git_shared_opts
+}
+
+
+_git_switch_opts() {
+  local -a opts
+  opts=(
+    "-i:Interactively select a commit to check out"
+    "--interactive:Interactively select a commit to check out"
+    "-c:When checking out the target commit, also create a branch with the provided name pointing to that commit"
+    "--create:When checking out the target commit, also create a branch with the provided name pointing to that commit"
+    "-f:Forcibly switch commits, discarding any working copy changes if necessary"
+    "--force:Forcibly switch commits, discarding any working copy changes if necessary"
+    "-m:If the current working copy changes do not apply cleanly to the target commit, start merge conflict resolution instead of aborting"
+    "--merge:If the current working copy changes do not apply cleanly to the target commit, start merge conflict resolution instead of aborting"
+    "-d:If the target is a branch, switch to that branch and immediately detach from it"
+    "--detach:If the target is a branch, switch to that branch and immediately detach from it"
+  )
+  _describe -t options 'switch options' opts
+  _git_shared_opts
+}
+
+
+_git_sync_opts() {
+  local -a opts
+  opts=(
+    "--update:alias for --pull"
+    "-u:short alias for --pull"
+    "-p:Run `git fetch` to update remote references before carrying out the sync"
+    "--pull:Run `git fetch` to update remote references before carrying out the sync"
+    "--fr:alias for --force-rewrite"
+    "-f:Force moving public commits, even though other people may have access to those commits"
+    "--force-rewrite:Force moving public commits, even though other people may have access to those commits"
+    "--in-memory:Only attempt to perform an in-memory rebase. If it fails, do not attempt an on-disk rebase"
+    "--on-disk:Skip attempting to use an in-memory rebase, and try an on-disk rebase directly"
+    "--no-deduplicate-commits:Don't attempt to deduplicate commits. Normally, a commit with the same contents as another commit which has already been applied to the target branch is skipped. If set, this flag skips that check"
+    "-m:Attempt to resolve merge conflicts, if any. If a merge conflict occurs and this option is not set, the operation is aborted"
+    "--merge:Attempt to resolve merge conflicts, if any. If a merge conflict occurs and this option is not set, the operation is aborted"
+    "--debug-dump-rebase-constraints:Debugging option. Print the constraints used to create the rebase plan before executing it"
+    "--debug-dump-rebase-plan:Debugging option. Print the rebase plan that will be executed before executing it"
+    "--hidden:Include hidden commits in the results of evaluating revset expressions"
+  )
+  _describe -t options 'sync options' opts
+  _git_shared_opts
+}
+
+
+_git_undo_opts() {
+  local -a opts
+  opts=(
+    "-i:Interactively browse through previous states of the repository before selecting one to return to"
+    "--interactive:Interactively browse through previous states of the repository before selecting one to return to"
+    "-y:Skip confirmation and apply changes immediately"
+    "--yes:Skip confirmation and apply changes immediately"
+  )
+  _describe -t options 'undo options' opts
+  _git_shared_opts
+}
+
+
+_git_wrap_opts() {
+  local -a opts
+  opts=(
+    "--git-executable:The `git` executable to invoke"
+  )
+  _describe -t options 'wrap options' opts
+  _git_shared_opts
+}
+
+__git_shared_command() {
+  case $prev in
+    -C)
+      _files
+      ;;
+    --color)
+      compadd auto always never
+      ;;
+    *)
+      _git_shared_opts
+      ;;
+  esac
+}
+
+__git_move_command() {
+  case $prev in
+    -C)
+      _files
+      ;;
+    --color)
+      compadd auto always never
+      ;;
+    -b|-x|-s|-d|--base|--exact|--source|--dest)
+      _git_commit_with_message
+      ;;
+    *)
+      if [[ $cur == -* ]]; then  # complete for options
+        _git_move_opts
+      else
+        _default
+      fi
+      ;;
+  esac
+}
+
+__git_custom_command() {
+  local cmd="$1"
+  shift
+
+  case $prev in
+    -C)
+      _files
+      ;;
+    --color)
+      compadd auto always never
+      ;;
+    *)
+      if [[ $cur == -* ]]; then  # complete for options
+        if [[ $cmd == "prev" || $cmd == "next" ]]; then
+          _git_prev_next_opts
+        elif [[ $cmd == "hide" || $cmd == "unhide" ]]; then
+          _git_hide_unhide_opts
+        else
+          "_git_${cmd}_opts"
+        fi
+      elif [[ "$cmd" == "switch" ]]; then
+        # switch requires commit only
+        _git_commit_with_message
+      elif [[ "$cmd" =~ ^(amend|difftool|init|repair|record|undo|wrap|help|prev|next)$ ]]; then
+        # amend difftool init repair record undo wrap help is option onjjj
+        # TODO: prev/next requires <NUMBER>
+        _default
+      elif [[ "$cmd" =~ ^(hide|query|restack|reword|smartlog|submit|sync|unhide)$ ]]; then
+        # hide query restack reword smartlog submit sync unhide
+        # these commands require commit/revset
+        _git_commit_and_revset
+      else  # not match, fallback
+        _default
+      fi
+      ;;
+  esac
+}
+
+_git-branchless () {
+  local _ret=0
+  local cur prev cword
+  cur=${words[CURRENT]}
+  prev=${words[CURRENT-1]}
+  let cword=CURRENT-1
+
+  local -a commands
+
+  commands=(
+    "amend:Amend the current HEAD commit"
+    "bug-report:Gather information about recent operations to upload as part of a bug report"
+    "difftool:Use the partial commit selector UI as a Git-compatible difftool; see git-difftool(1) for more information on Git difftools"
+    "gc:Run internal garbage collection"
+    "hide:Hide the provided commits from the smartlog"
+    "init:Initialize the branchless workflow for this repository"
+    "install-man-pages:Install git-branchless's man-pages to the given path"
+    "move:Move a subtree of commits from one location to another"
+    "next:Move to a later commit in the current stack"
+    "prev:Move to an earlier commit in the current stack"
+    "query:Query the commit graph using the \"revset\" language and print matching commits"
+    "repair:Restore internal invariants by reconciling the internal operation log with the state of the Git repository"
+    "restack:Fix up commits abandoned by a previous rewrite operation"
+    "record:Create a commit by interactively selecting which changes to include"
+    "reword:Reword commits"
+    "smartlog:\`smartlog\` command"
+    "submit:Push commits to a remote"
+    "switch:Switch to the provided branch or commit"
+    "sync:Move any local commit stacks on top of the main branch"
+    "test:Run a command on each commit in a given set and aggregate the results"
+    "undo:Browse or return to a previous state of the repository"
+    "unhide:Unhide previously-hidden commits from the smartlog"
+    "wrap:Wrap a Git command inside a branchless transaction"
+    "help:Print this message or the help of the given subcommand(s)"
+  )
+
+  local context state line
+  typeset -A opt_args
+
+  _arguments -C \
+    '(-): :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _git_shared_opts
+      _describe -t commands 'git-branchless commands' commands && return
+      ;;
+    args)
+      case $words[1] in
+        move)
+          __git_move_command
+          ;;
+        switch|init|amend|sync|restack|difftool|query|repair|record|reword|submit|wrap|smartlog|undo|prev|next|hide|unhide)
+          __git_custom_command $words[1]
+          ;;
+        bug-report|install-man-pages|gc|test)  # revset/commit is not needed for these commands
+          __git_shared_command
+          ;;
+        *)
+          _default
+          ;;
+      esac
+      ;;
+  esac
+
+  return _ret
+}
+
+_git-branchless

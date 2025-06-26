@@ -1,0 +1,474 @@
+#!/usr/bin/env python3
+
+import os
+import re
+import subprocess
+from argparse import ArgumentParser
+from collections import defaultdict
+
+_SHARED_OPTS = [
+    '-C',
+    '--color',
+    '-h',
+    '--help',
+]
+
+SHELL_FUNC_TEMPLATE = """
+_git_{0}_opts() {{
+  local -a opts
+  opts=(
+    {1}
+  )
+  _describe -t options '{0} options' opts
+  _git_shared_opts
+}}
+"""
+
+HEAD_FUNC = r"""
+#compdef git-branchless
+# description:git-branchless completion script
+
+_git_revset() {
+  # reference: https://github.com/arxanas/git-branchless/wiki/Reference:-Revsets
+  local items=(
+    "'all()'"
+    "'none()'"
+    "'union(x, y)'"
+    "'intersection(x, y)'"
+    "'difference(x, y)'"
+    "'only(x, y)'"
+    "'range(x, y)'"
+    "'ancestors(x)'"
+    "'ancestors.nth(x, n)'"
+    "'descendants(x)'"
+    "'parents(x)'"
+    "'parents.nth(x, n)'"
+    "'children(x)'"
+    "'roots(x)'"
+    "'heads(x)'"
+    "'merges()'"
+    "'main()'"
+    "'public()'"
+    "'draft()'"
+    "'stack([x])'"
+    "'branches([text-pattern])'"
+    "'message(text-pattern)'"
+    "'paths.changed(text-pattern)'"
+    "'author.name(text-pattern)'"
+    "'author.email(text-pattern)'"
+    "'author.date(date-pattern)'"
+    "'committer.name(text-pattern)'"
+    "'committer.email(text-pattern)'"
+    "'committer.date(date-pattern)'"
+    "'exactly(x, n)'"
+    "'current(x)'"
+    "'tests.passed([test-command-pattern])'"
+    "'tests.failed([test-command-pattern])'"
+    "'tests.fixable([test-command-pattern])'"
+  )
+  local desc=(
+    "all(): all visible commits"
+    "none(): the empty set of commits"
+    "union(x, y): all commits that are in either x or y"
+    "intersection(x, y): all commits that are in both x and y"
+    "difference(x, y): all commits that are in x but not in y"
+    "only(x, y): all commits which are ancestors of x, but not ancestors of y"
+    "range(x, y): all commits which are both descendants of x and ancestors of y"
+    "ancestors(x): all commits which are ancestors of commits in x (includes x itself)"
+    "ancestors.nth(x, n): the nth generation ancestor of x, following only the first parents (~n)"
+    "descendants(x): all commits which are descendants of commits in x (includes x itself)"
+    "parents(x): all commits which are an immediate parent of a commit in x"
+    "parents.nth(x, n): the nth parent of x (^n)"
+    "children(x): all commits which are an immediate child of a commit in x"
+    "roots(x): all commits in x which have no immediate ancestors also in x"
+    "heads(x): all commits in x which have no immediate descendants also in x"
+    "merges(): all merge commits (since v0.9.0)"
+    "main(): the main branch commit (since v0.6.0)"
+    "public(): all public commits (same as ancestors(main())) (since v0.6.0)"
+    "draft(): all draft commits"
+    "stack([x]): all draft commits in the commit stack containing x (default: HEAD)"
+    "branches([text-pattern]): all commits with branches pointing to them (pattern optional, since v0.9.0)"
+    "message(text-pattern): all commits whose messages match the specified pattern"
+    "paths.changed(text-pattern): all commits with a changed file path matching the specified pattern"
+    "author.name(text-pattern): all commits whose author name matches the specified pattern"
+    "author.email(text-pattern): all commits whose author email matches the specified pattern"
+    "author.date(date-pattern): all commits whose author date matches the specified pattern"
+    "committer.name(text-pattern): all commits whose committer name matches the specified pattern"
+    "committer.email(text-pattern): all commits whose committer email matches the specified pattern"
+    "committer.date(date-pattern): all commits whose committer date matches the specified pattern"
+    "exactly(x, n): all commits in x, but only if x contains exactly n commits (since v0.5.0)"
+    "current(x): the current version of all commits in x (since v0.6.0)"
+    "tests.passed([test-command-pattern]): all commits whose most recent test run for the specified test command passed (since v0.7.0)"
+    "tests.failed([test-command-pattern]): all commits whose most recent test run for the specified test command failed (since v0.7.0)"
+    "tests.fixable([test-command-pattern]): all commits whose most recent test run for the specified test command wrote output to the working copy (since v0.7.0)"
+  )
+  compadd -Q -V "revset_functions" -S '' -d desc -- "${items[@]}"
+}
+
+_git_commit_with_message() {
+  local -a commits
+  local line hash msg
+
+  while IFS= read -r line; do
+    hash="${line%% *}"
+    msg="${line#* }"
+    commits+=("$hash:$msg")
+  done < <(git-branchless query "((draft() | branches() | @) % main()) | branches() | @" 2>/dev/null)
+  # above revset from https://github.com/arxanas/git-branchless/wiki/Command:-git-smartlog
+  _describe -t commits 'commits' commits
+}
+
+_git_commit_and_revset() {
+  _git_commit_with_message
+  _git_revset
+}
+
+_git_shared_opts() {
+  local -a opts
+  opts=(
+    "-C:change to the given directory before executing the rest of the program"
+    "--color:flag to force enable or disable terminal colors (auto|always|never)"
+    "-h:print help (see a summary with '-h')"
+    "--help:print help (see a summary with '-h')"
+  )
+  _describe -t options 'shared options' opts
+}
+"""
+
+MAIN_FUNC = r"""
+__git_shared_command() {
+  case $prev in
+    -C)
+      _files
+      ;;
+    --color)
+      compadd auto always never
+      ;;
+    *)
+      _git_shared_opts
+      ;;
+  esac
+}
+
+__git_move_command() {
+  case $prev in
+    -C)
+      _files
+      ;;
+    --color)
+      compadd auto always never
+      ;;
+    -b|-x|-s|-d|--base|--exact|--source|--dest)
+      _git_commit_with_message
+      ;;
+    *)
+      if [[ $cur == -* ]]; then  # complete for options
+        _git_move_opts
+      else
+        _default
+      fi
+      ;;
+  esac
+}
+
+__git_custom_command() {
+  local cmd="$1"
+  shift
+
+  case $prev in
+    -C)
+      _files
+      ;;
+    --color)
+      compadd auto always never
+      ;;
+    *)
+      if [[ $cur == -* ]]; then  # complete for options
+        if [[ $cmd == "prev" || $cmd == "next" ]]; then
+          _git_prev_next_opts
+        elif [[ $cmd == "hide" || $cmd == "unhide" ]]; then
+          _git_hide_unhide_opts
+        else
+          "_git_${cmd}_opts"
+        fi
+      elif [[ "$cmd" == "switch" ]]; then
+        # switch requires commit only
+        _git_commit_with_message
+      elif [[ "$cmd" =~ ^(amend|difftool|init|repair|record|undo|wrap|help|prev|next)$ ]]; then
+        # amend difftool init repair record undo wrap help is option onjjj
+        # TODO: prev/next requires <NUMBER>
+        _default
+      elif [[ "$cmd" =~ ^(hide|query|restack|reword|smartlog|submit|sync|unhide)$ ]]; then
+        # hide query restack reword smartlog submit sync unhide
+        # these commands require commit/revset
+        _git_commit_and_revset
+      else  # not match, fallback
+        _default
+      fi
+      ;;
+  esac
+}
+
+_git-branchless () {
+  local _ret=0
+  local cur prev cword
+  cur=${words[CURRENT]}
+  prev=${words[CURRENT-1]}
+  let cword=CURRENT-1
+
+  local -a commands
+
+  commands=(
+    "amend:Amend the current HEAD commit"
+    "bug-report:Gather information about recent operations to upload as part of a bug report"
+    "difftool:Use the partial commit selector UI as a Git-compatible difftool; see git-difftool(1) for more information on Git difftools"
+    "gc:Run internal garbage collection"
+    "hide:Hide the provided commits from the smartlog"
+    "init:Initialize the branchless workflow for this repository"
+    "install-man-pages:Install git-branchless's man-pages to the given path"
+    "move:Move a subtree of commits from one location to another"
+    "next:Move to a later commit in the current stack"
+    "prev:Move to an earlier commit in the current stack"
+    "query:Query the commit graph using the \"revset\" language and print matching commits"
+    "repair:Restore internal invariants by reconciling the internal operation log with the state of the Git repository"
+    "restack:Fix up commits abandoned by a previous rewrite operation"
+    "record:Create a commit by interactively selecting which changes to include"
+    "reword:Reword commits"
+    "smartlog:\`smartlog\` command"
+    "submit:Push commits to a remote"
+    "switch:Switch to the provided branch or commit"
+    "sync:Move any local commit stacks on top of the main branch"
+    "test:Run a command on each commit in a given set and aggregate the results"
+    "undo:Browse or return to a previous state of the repository"
+    "unhide:Unhide previously-hidden commits from the smartlog"
+    "wrap:Wrap a Git command inside a branchless transaction"
+    "help:Print this message or the help of the given subcommand(s)"
+  )
+
+  local context state line
+  typeset -A opt_args
+
+  _arguments -C \
+    '(-): :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _git_shared_opts
+      _describe -t commands 'git-branchless commands' commands && return
+      ;;
+    args)
+      case $words[1] in
+        move)
+          __git_move_command
+          ;;
+        switch|init|amend|sync|restack|difftool|query|repair|record|reword|submit|wrap|smartlog|undo|prev|next|hide|unhide)
+          __git_custom_command $words[1]
+          ;;
+        bug-report|install-man-pages|gc|test)  # revset/commit is not needed for these commands
+          __git_shared_command
+          ;;
+        *)
+          _default
+          ;;
+      esac
+      ;;
+  esac
+
+  return _ret
+}
+
+_git-branchless
+"""
+
+
+def parse_branchless_help_text(text: str) -> dict[str, str]:
+    lines = text.strip().splitlines()
+
+    options_dict = defaultdict(str)
+
+    current_opts, current_description_lines = [], []
+
+    def flush():
+        """Store options and description"""
+        if current_opts:  # current option exist
+            desc = ' '.join(line.strip() for line in current_description_lines).strip()
+            for opt in current_opts:
+                options_dict[opt] = desc
+
+    # opt line example: '-p, --pull <branch>  Pull changes from the remote branch'
+    opt_pattern = re.compile(r'(-\w(?:,? ?--\w[\w-]*)*|--\w[\w-]*)(?:\s+<[^>]+>)?\s*$')
+
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        match = opt_pattern.match(line)
+
+        if match:
+            flush()
+            current_opts, current_description_lines = [], []  # reset
+
+            parts = re.split(r'\s{2,}', line)
+            if parts:
+                # extract options like '-p, --pull'
+                for opt in parts[0].split(', '):
+                    opt = opt.strip()
+                    assert opt.startswith('-'), f'Invalid option format: {opt}'
+                    # dealing with opt like "--color <COLOR>"
+                    if '<' in opt and '>' in opt:
+                        opt = opt.split('<')[0].strip()
+                    current_opts.append(opt)
+
+                if len(parts) > 1:  # the rest part is the description
+                    current_description_lines.append(parts[1])
+        elif current_opts:
+            # continuing description or aliases line
+            current_description_lines.append(line)
+
+        i += 1
+
+    flush()
+
+    return dict(options_dict)
+
+
+def aliases_to_opts(opt_dict: dict[str, str]) -> dict[str, str]:
+    """Convert options with aliases to a option"""
+    # two type of alias list below:
+    # 1. normal [aliases: --update]
+    # 2. short: [short aliases: u]
+    opts = {}
+    for opt, desc in opt_dict.items():
+        # extract [aliases: ...] and [short aliases: ...] using regex
+        alias_match = re.search(r'\[aliases:\s*([^\]]+)\]', desc)
+        short_alias_match = re.search(r'\[short aliases:\s*([^\]]+)\]', desc)
+
+        if alias_match or short_alias_match:
+            aliases = alias_match.group(1).strip() if alias_match else ''
+            short_aliases = short_alias_match.group(1).strip() if short_alias_match else ''
+            if aliases and not aliases.startswith('-'):
+                aliases = f'--{aliases}'
+            if short_aliases and not short_aliases.startswith('-'):
+                short_aliases = f'-{short_aliases}'
+
+            desc_clean = re.sub(r'\[aliases:.*?\]', '', desc)
+            desc_clean = re.sub(r'\[short aliases:.*?\]', '', desc_clean)
+            desc_clean = desc_clean.strip()
+
+            if aliases:
+                opts[aliases] = f'alias for {opt}'
+            if short_aliases:
+                opts[short_aliases] = f'short alias for {opt}'
+            opts[opt] = desc_clean
+        else:  # no alias to convert
+            opts[opt] = desc
+    return opts
+
+
+def generate_opts(command: str | list[str], indent_length: int = 2) -> str:
+    if isinstance(command, list):
+        cmd_text = '_'.join(command).replace('-', '_')
+        command = command[0]
+    else:
+        cmd_text = command.replace('_', '-')
+
+    try:
+        cmd_output = subprocess.run(
+            ['git-branchless', command, '--help'], capture_output=True, text=True, check=True
+        ).stdout
+    except subprocess.CalledProcessError as e:
+        print(f'Error running command: {e}')
+        return ''
+
+    opt_dict = parse_branchless_help_text(cmd_output)
+    for k in _SHARED_OPTS:
+        if k in opt_dict:
+            opt_dict.pop(k)
+    opt_dict = aliases_to_opts(opt_dict)
+    join_text = '\n' + ' ' * indent_length * 2
+    if not opt_dict:
+        return ''
+
+    opt_text = join_text.join([f'"{opt}:{desc}"' for opt, desc in opt_dict.items()])
+    func_source = SHELL_FUNC_TEMPLATE.format(cmd_text.replace('-', '_'), opt_text)
+    return func_source
+
+
+def generate_completion_file(indent_length: int = 2) -> str:
+    paired_cmds = [  # each line shared same opts
+        ['hide', 'unhide'],
+        ['prev', 'next'],
+    ]
+    # shared_only_opts = ["bug-report", "install-man-pages", "gc", "test"]
+    left_cmds = [
+        'undo',
+        'move',
+        'smartlog',
+        'switch',
+        'sync',
+        'init',
+        'restack',
+        'amend',
+        'difftool',
+        'query',
+        'repair',
+        'record',
+        'reword',
+        'submit',
+        'wrap',
+    ]
+    all_cmds = paired_cmds + sorted(left_cmds)
+    opt_text = '\n'.join(generate_opts(cmd, indent_length) for cmd in all_cmds)
+    return (HEAD_FUNC + opt_text + MAIN_FUNC).lstrip()
+
+
+_WRITE_CONTENT = r"""
+autoload -Uz compinit
+compinit
+compdef _git-branchless git-branchless
+zstyle ':completion:*:git-branchless:*' sort false
+"""
+
+
+def red_text(text: str) -> str:
+    return f'\033[31m{text}\033[0m'
+
+
+def write_completion_file(file_path: str) -> None:
+    """Write the completion file to the specified path"""
+    print(f'Generating git-branchless completion file in {file_path}...')
+    file_path = os.path.expandvars(file_path)
+    if os.path.exists(file_path):
+        print(f'Completion dir {file_path} already exists.')
+    else:
+        os.makedirs(file_path, exist_ok=True)
+
+    file_name = os.path.join(file_path, '_git-branchless')
+    content = generate_completion_file()
+    with open(file_name, 'w') as f:
+        f.write(content)
+    print(f'Completion file written to {file_name}.')
+
+    warn_text = red_text('Please add the following lines to your rc file(.zshrc) to make completion work:')
+    print('\n' + warn_text)
+    print('---' * 10)
+    print(f'fpath=({file_path} $fpath)')
+    print(_WRITE_CONTENT.strip())
+
+
+def make_parser() -> ArgumentParser:
+    """Make a parser for git-branchless completion"""
+    parser = ArgumentParser(description='Generate git-branchless completion script.')
+    parser.add_argument(
+        '-d',
+        '--zsh-completion-dir',
+        type=str,
+        default='$HOME/.zsh/completions',
+        help='Path to write the completion file (default: $HOME/.zsh/completions)',
+    )
+    return parser
+
+
+if __name__ == '__main__':
+    args = make_parser().parse_args()
+    write_completion_file(file_path=args.zsh_completion_dir)
