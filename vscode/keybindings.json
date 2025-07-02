@@ -251,10 +251,12 @@
     },
     {
         "key": "cmd+b",
-        "command": "-workbench.action.toggleSidebarVisibility",
+        "command": "-workbench.action.toggleSidebarVisibility"
     },
+    // shift + cmd + i to toggle auxiliary bar, usually used for copoilot
+    // cmd + i is used for inline chat, add shift for detailed chat
     {
-        "key": "cmd+b",
-        "command": "workbench.action.toggleAuxiliaryBar",
+        "key": "shift+cmd+i",
+        "command": "workbench.action.toggleAuxiliaryBar"
     }
 ]

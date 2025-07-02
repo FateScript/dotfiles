@@ -175,6 +175,8 @@ update_conf()
         echo "update_conf should be executed under the dofile dir."
         return
     fi
+
+    # tmux and zsh
     cp tmux.conf $HOME/.tmux.conf
     if [ -d $HOME/.zsh ]; then
         echo "remove $HOME/.zsh dir"
@@ -189,6 +191,13 @@ update_conf()
     fi
     echo "update configure of zsh & tmux done"
 
+    # python startup
     echo "update $HOME/.python_startup.py, for python startup"
     cp python/startup.py $HOME/.python_startup.py
+
+    # local scripts
+    bin_dir="$HOME/.local/bin"
+    mkdir -p "$bin_dir"
+    cp scripts/* "$bin_dir/"
+    echo "update scripts in $bin_dir"
 }

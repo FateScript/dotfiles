@@ -138,6 +138,10 @@ alias upy_ins="uv python install"
 alias upy_list="uv python list"
 alias upy_set="uv python pin"  # for example, upy_set 3.10
 
+# ruff
+alias rlint="ruff check --fix"
+alias rsort="ruff check --select I --fix"
+
 # git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more
 alias gmm="git commit --amend"  # git message modification
 alias gad='git add $(git ls-files --deleted)'
