@@ -18,7 +18,9 @@ compdef _git gf=git-fetch
 compdef _git gco=git-checkout  # make completion work for gco, though alias also in git plugin
 compdef _git gb=git-branch
 compdef _git gr=git-remote
+# git branchless alias
 compdef _git-branchless git-branchless
+compdef _git-fixup gfup=git-fixup
 
 # specific filetype
 _pic() { _files -g '*.(jpg|png|bmp|gif|ppm|pbm|jpeg|xcf|ico)(-.)' }

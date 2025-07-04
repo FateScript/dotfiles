@@ -1,0 +1,15 @@
+#compdef git-fixup
+
+_git-fixup() {
+  local -a commits
+  local line hash msg
+
+  while IFS= read -r line; do
+    hash="${line%% *}"
+    msg="${line#* }"
+    commits+=("$hash:$msg")
+  done < <(git-branchless query "((draft() | branches() | @) % main()) | branches() | @" 2>/dev/null)
+  _describe -t commits 'commits' commits
+}
+
+_git-fixup

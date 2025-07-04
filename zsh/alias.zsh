@@ -160,21 +160,15 @@ alias git_proxy_on='git config --global http.proxy 127.0.0.1:7890 && git config 
 alias git_proxy_off='git config --global --unset http.proxy && git config --global --unset https.proxy'
 
 # git branchless
-alias gbls="git branchless"
 alias gb_init="git branchless init --main-branch "
 alias gb_unin="git branchless init --uninstall"
 alias gbp="git prev"
 alias gbn="git next"
-alias gsl="git sl"  # smart log
-alias gmv="git move"  # smart log
+alias gsl="git-branchless smartlog"
 alias gin="git move --insert --exact"  # git insert a commit
-alias grsk="git restack"
 alias gfup="git fixup"
-alias ghd="git hide"
-alias guhd="git unhide"
-alias ggo="git sw -i"  # git go to switch commit when using branchless
-alias gsp="git_branch_push"  # short for super push, used for git branchless
 alias gsy="git sync --pull"
+alias gsp="git_branch_push"  # short for super push, used for git branchless
 
 # cargo
 alias install_delta="cargo install git-delta"
