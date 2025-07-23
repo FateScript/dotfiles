@@ -147,6 +147,7 @@ install_tools()
     os_install ncdu
 
     pip install imgcat
+    pip install nvitop
     install_fzf
     install_ranger
 }

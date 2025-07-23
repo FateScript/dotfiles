@@ -12,3 +12,6 @@ alias -g NN='>/dev/null 2>&1'
 safe_export_path "$HOME/.local/bin" NN  # for self used bin file
 
 alias chrome='open -a "Google Chrome"'
+
+# enable zsh completion for uv
+command -v uv NN && eval "$(uv generate-shell-completion zsh)"

@@ -270,16 +270,6 @@ search_funcs() {
     done
 }
 
-env_get()
-{
-    local env_value
-    env_value=$(env | grep "$1" | cut -d "=" -f2)
-    if [[ -z "$env_value" ]]; then  # not exist
-        env_value=$2
-    fi
-    echo "$env_value"
-}
-
 function proxy_off() {
    unset http_proxy
    unset https_proxy
@@ -305,18 +295,18 @@ rgopen()
     fi
 }
 
-_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal conda ssh py his pip git)' }
+_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal conda ssh his py pip git)' }
 
 conf()
 {
 	case $1 in
-		xmonad)		vim $HOME/.xmonad/xmonad.hs ;;
-		tmux)		vim $HOME/.tmux.conf ;;
-		vim)		vim $HOME/.vimrc ;;
-		nvim)		vim $HOME/.config/nvim/init.vim ;;
-		zsh)		vim $HOME/.zshrc ;;
-		zshbase)    vim $HOME/.zsh/base.zsh ;;
-		zshal)      vim $HOME/.zsh/alias.zsh ;;
+        xmonad)		vim $HOME/.xmonad/xmonad.hs ;;
+        tmux)		vim $HOME/.tmux.conf ;;
+        vim)		vim $HOME/.vimrc ;;
+        nvim)		vim $HOME/.config/nvim/init.vim ;;
+        zsh)		vim $HOME/.zshrc ;;
+        zshbase)    vim $HOME/.zsh/base.zsh ;;
+        zshal)      vim $HOME/.zsh/alias.zsh ;;
         zshins)     vim $HOME/.zsh/install.zsh;;
         zshlocal)   vim $HOME/.zsh.local;;
         conda)      vim $HOME/.condarc ;;
@@ -461,7 +451,6 @@ p() {
 
 # ANSI escape code related functions
 # learn more at https://en.wikipedia.org/wiki/ANSI_escape_code
-
 yank()
 {
     # Copy the input to the clipboard, when pbcopy/xclip is not available

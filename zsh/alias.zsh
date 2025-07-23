@@ -56,6 +56,7 @@ which nvidia-smi NN && {  # https://github.com/ppwwyyxx/dotfiles/blob/6f3985ad81
     alias nvp="(echo \"GPU\tMEM\tPID\tCOMMAND\" && __nvp) | column -t -s $'\t' | cut -c 1-\$(tput cols) | colorline"
     alias nvpkill="nvp | awk '{print \$3}' | tail -n+2 | xargs -I {} sh -c 'echo Killing {}; kill {} || echo failed'"
     alias fuser-nvidia-kill="fuser -v /dev/nvidia* 2>&1 | egrep -o '$USER.*[0-9]+ .*'  | awk '{print \$2}' | xargs -I {} sh -c 'echo Killing {}; kill {} || echo failed'"
+    alias nv_devices="nvidia-smi --query-gpu=name,driver_version,pci.device_id --format=csv | colorline"
 }
 
 which dc NN || alias dc="cd"  # miss-type correction
@@ -139,7 +140,7 @@ alias upy_list="uv python list"
 alias upy_set="uv python pin"  # for example, upy_set 3.10
 
 # ruff
-alias rlint="ruff check --fix"
+alias rlint="ruff format"
 alias rsort="ruff check --select I --fix"
 
 # git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more

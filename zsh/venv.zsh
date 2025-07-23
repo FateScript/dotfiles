@@ -80,9 +80,9 @@ deact() {
 }
 
 _complete_venv(){
-	choices=`ls_venv`
-	suf=( -S '' )
-	_arguments -O suf "*:value:( $choices )"
+    choices=`ls_venv`
+    suf=( -S '' )
+    _arguments -O suf "*:value:( $choices )"
 }
 
 act_venv()
