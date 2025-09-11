@@ -148,6 +148,7 @@ install_tools()
 
     pip install imgcat
     pip install nvitop
+    pip install py-spy
     install_fzf
     install_ranger
 }

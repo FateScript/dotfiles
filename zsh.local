@@ -9,7 +9,11 @@
 
 alias -g NN='>/dev/null 2>&1'
 # safe_export_path "/opt/homebrew/bin/" NN  # for homebrew users
+safe_export_path "/opt/homebrew/bin/" NN
 safe_export_path "$HOME/.local/bin" NN  # for self used bin file
+safe_export_path "$HOME/.cargo/bin" NN
+
+python3 -c "import pytoolzen" NN && export PYTHONBREAKPOINT="pytoolzen.set_trace"
 
 alias chrome='open -a "Google Chrome"'
 

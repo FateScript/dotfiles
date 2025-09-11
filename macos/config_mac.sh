@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 
 # vscode
 echo "VSCode: Disable press and hold for keys in favor of key repeat"

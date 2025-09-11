@@ -322,8 +322,18 @@ conf()
 pypack()
 {
     timelog "packing whl now..."
-    python3 setup.py sdist bdist_wheel
+    # python3 setup.py sdist bdist_wheel
+    python -m build
+    # python -m twine upload dist/*
     timelog "pack whl into dist directory done..."
+}
+
+pypath() {
+    if [[ -z "$1" ]]; then
+        echo "Usage: pypath <path>"
+        return 1
+    fi
+    export PYTHONPATH=$1:$PYTHONPATH
 }
 
 retry_until_failed()

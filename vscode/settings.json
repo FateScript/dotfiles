@@ -6,6 +6,12 @@
     "editor.fontSize": 14,
     "workbench.colorTheme": "Gruvbox Dark Hard",
     "editor.lineNumbers": "relative",
+    "workbench.colorCustomizations": {
+      "editor.findMatchBorder": "#eb193c",
+      "editor.findMatchHighlightBorder": "#19eb89",
+      "terminal.findMatchBorder": "#eb1919",
+      "terminal.findMatchHighlightBorder": "#19eb89"
+    },
     // vim related setting
     "vim.useCtrlKeys": true,
     "vim.hlsearch": true,

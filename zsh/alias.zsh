@@ -132,6 +132,7 @@ alias pip_ins_compat="pip install -e . --config-settings editable_mode=compat"
 alias pdbtest="pytest --pdb --pdbcls=IPython.terminal.debugger:Pdb -s"
 alias extest="pytest --pdb --pdbcls=pytoolzen.debugger.ex_pdb:ExPdb -s"
 alias nb2py="jupyter nbconvert --to script"
+alias ensurepip="python3 -m ensurepip --upgrade"
 
 # uv
 alias upip="uv pip"

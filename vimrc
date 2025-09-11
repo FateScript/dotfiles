@@ -163,7 +163,7 @@ autocmd bufnewfile *.py call HeaderPython()
 
 "Auto Compile and Run
 map <F5> :call CompileRunGcc()<CR>
-functio! CompileRunGcc()
+function! CompileRunGcc()
     exec "w"
     if &filetype == 'c'
         exec '!g++ % -o %<'
