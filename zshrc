@@ -46,6 +46,7 @@ ZSH_THEME="candy"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
     git
+    uv
     autojump
     zsh-autosuggestions
     zsh-syntax-highlighting

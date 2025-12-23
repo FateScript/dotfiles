@@ -315,6 +315,7 @@ conf()
         py)         vim $HOME/.python_startup.py;;
         pip)        vim $HOME/.config/pip/pip.conf;;
         git)        vim $HOME/.gitconfig;;
+        rclone)     vim $HOME/.config/rclone/rclone.conf;;
         *)		echo "Unknown application $1" ;;
 	esac
 }

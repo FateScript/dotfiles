@@ -135,10 +135,8 @@ alias nb2py="jupyter nbconvert --to script"
 alias ensurepip="python3 -m ensurepip --upgrade"
 
 # uv
-alias upip="uv pip"
-alias upy_ins="uv python install"
-alias upy_list="uv python list"
-alias upy_set="uv python pin"  # for example, upy_set 3.10
+alias uvpy_ins="uv python install"
+alias uvpy_list="uv python list"
 
 # ruff
 alias rlint="ruff format"
@@ -173,8 +171,10 @@ alias gsy="git sync --pull"
 alias gsp="git_branch_push"  # short for super push, used for git branchless
 
 # cargo
+alias install_cargo="curl https://sh.rustup.rs -sSf | sh"
 alias install_delta="cargo install git-delta"
-alias install_branchless="cargo install --locked git-branchless"
+# "cargo install --locked git-branchless"
+alias install_branchless="cargo install --git https://github.com/arxanas/git-branchless git-branchless"
 
 # curl
 alias install_ollama="curl -fsSL https://ollama.com/install.sh | sh"
