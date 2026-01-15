@@ -1,0 +1,85 @@
+#compdef py-spy
+compdef _py-spy py-spy
+zstyle ':completion:*:py-spy:*' sort false
+
+
+
+_py-spy_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "record:Records stack trace information to a flamegraph, speedscope or raw file"
+    "top:Displays a top like view of functions consuming CPU"
+    "dump:Dumps stack traces for a target program to stdout"
+    "help:Print this message or the help of the given subcommand(s)"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_py-spy() {
+  local state
+
+  _arguments -C \
+    '(--version -V)'{--version,-V}'[Print version information]' \
+    '(--help -h)'{--help,-h}'[Print help information]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _py-spy_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        record)
+          _arguments \
+            '(--pid -p)'{--pid,-p}'[PID of a running python program to spy on, in decimal or hex]:Process ID:_pids' \
+            '(--full-filenames)'--full-filenames'[Show full Python filenames, instead of shortening to show only the package part]' \
+            '(--output -o)'{--output,-o}'[Output filename]:Files:_files' \
+            '(--format -f)'{--format,-f}'[Output file format]:Choices:(flamegraph raw speedscope chrometrace)' \
+            '(--duration -d)'{--duration,-d}'[The number of seconds to sample for]:Choices:(unlimited 10 30 60 300 600)' \
+            '(--rate -r)'{--rate,-r}'[The number of samples to collect per second]:Choices:(100 200 500 1000)' \
+            '(--subprocesses -s)'{--subprocesses,-s}'[Profile subprocesses of the original process]' \
+            '(--function -F)'{--function,-F}'[Aggregate samples by function'\''s first line number, instead of current line number]' \
+            '(--nolineno)'--nolineno'[Do not show line numbers]' \
+            '(--threads -t)'{--threads,-t}'[Show thread ids in the output]' \
+            '(--gil -g)'{--gil,-g}'[Only include traces that are holding on to the GIL]' \
+            '(--idle -i)'{--idle,-i}'[Include stack traces for idle threads]' \
+            '(--nonblocking)'--nonblocking'[Don'\''t pause the python process when collecting samples. Setting this option will reduce the performance impact of sampling, but may lead to inaccurate results]' \
+            '(--help -h)'{--help,-h}'[Print help information]'
+          ;;
+        top)
+          _arguments \
+            '(--pid -p)'{--pid,-p}'[PID of a running python program to spy on, in decimal or hex]:Process ID:_pids' \
+            '(--rate -r)'{--rate,-r}'[The number of samples to collect per second]:Choices:(100 200 500 1000)' \
+            '(--subprocesses -s)'{--subprocesses,-s}'[Profile subprocesses of the original process]' \
+            '(--full-filenames)'--full-filenames'[Show full Python filenames, instead of shortening to show only the package part]' \
+            '(--gil -g)'{--gil,-g}'[Only include traces that are holding on to the GIL]' \
+            '(--idle -i)'{--idle,-i}'[Include stack traces for idle threads]' \
+            '(--delay)'--delay'[Delay between top refreshes]:Choices:(1.0 0.5 2.0)' \
+            '(--nonblocking)'--nonblocking'[Don'\''t pause the python process when collecting samples. Setting this option will reduce the performance impact of sampling, but may lead to inaccurate results]' \
+            '(--help -h)'{--help,-h}'[Print help information]'
+          ;;
+        dump)
+          _arguments \
+            '(--pid -p)'{--pid,-p}'[PID of a running python program to spy on, in decimal or hex]:Process ID:_pids' \
+            '(--core -c)'{--core,-c}'[Filename of coredump to display python stack traces from]:Files:_files' \
+            '(--full-filenames)'--full-filenames'[Show full Python filenames, instead of shortening to show only the package part]' \
+            '(--locals -l)'{--locals,-l}'[Show local variables for each frame. Passing multiple times (-ll) increases verbosity]' \
+            '(--json -j)'{--json,-j}'[Format output as JSON]' \
+            '(--subprocesses -s)'{--subprocesses,-s}'[Profile subprocesses of the original process]' \
+            '(--nonblocking)'--nonblocking'[Don'\''t pause the python process when collecting samples. Setting this option will reduce the performance impact of sampling, but may lead to inaccurate results]' \
+            '(--help -h)'{--help,-h}'[Print help information]'
+          ;;
+        help)
+
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_py-spy
