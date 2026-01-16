@@ -3,6 +3,18 @@ compdef _py-spy py-spy
 zstyle ':completion:*:py-spy:*' sort false
 
 
+_pids_details() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(ps --no-headers -eo pid,args)
+  _describe -t choices 'choices' choices
+}
+
 
 _py-spy_subcommands() {
   local -a subcmds
@@ -34,7 +46,7 @@ _py-spy() {
       case $words[1] in
         record)
           _arguments \
-            '(--pid -p)'{--pid,-p}'[PID of a running python program to spy on, in decimal or hex]:Process ID:_pids' \
+            '(--pid -p)'{--pid,-p}'[PID of a running python program to spy on, in decimal or hex]:PidDetails:_pids_details' \
             '(--full-filenames)'--full-filenames'[Show full Python filenames, instead of shortening to show only the package part]' \
             '(--output -o)'{--output,-o}'[Output filename]:Files:_files' \
             '(--format -f)'{--format,-f}'[Output file format]:Choices:(flamegraph raw speedscope chrometrace)' \
@@ -51,7 +63,7 @@ _py-spy() {
           ;;
         top)
           _arguments \
-            '(--pid -p)'{--pid,-p}'[PID of a running python program to spy on, in decimal or hex]:Process ID:_pids' \
+            '(--pid -p)'{--pid,-p}'[PID of a running python program to spy on, in decimal or hex]:PidDetails:_pids_details' \
             '(--rate -r)'{--rate,-r}'[The number of samples to collect per second]:Choices:(100 200 500 1000)' \
             '(--subprocesses -s)'{--subprocesses,-s}'[Profile subprocesses of the original process]' \
             '(--full-filenames)'--full-filenames'[Show full Python filenames, instead of shortening to show only the package part]' \
@@ -63,7 +75,7 @@ _py-spy() {
           ;;
         dump)
           _arguments \
-            '(--pid -p)'{--pid,-p}'[PID of a running python program to spy on, in decimal or hex]:Process ID:_pids' \
+            '(--pid -p)'{--pid,-p}'[PID of a running python program to spy on, in decimal or hex]:PidDetails:_pids_details' \
             '(--core -c)'{--core,-c}'[Filename of coredump to display python stack traces from]:Files:_files' \
             '(--full-filenames)'--full-filenames'[Show full Python filenames, instead of shortening to show only the package part]' \
             '(--locals -l)'{--locals,-l}'[Show local variables for each frame. Passing multiple times (-ll) increases verbosity]' \

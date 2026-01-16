@@ -139,7 +139,7 @@ alias uvpy_ins="uv python install"
 alias uvpy_list="uv python list"
 
 # ruff
-alias rlint="ruff format"
+alias rlint="ruff format --line-length 100"
 alias rsort="ruff check --select I --fix"
 
 # git aliases, see https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git for more

@@ -1,9 +1,9 @@
 from zcompy import Command, Completion, Files, Option
-from zcompy.action.action import ProcessID
+from zcompy.action.extend_action import PidDetails
 
 pid_option = Option(
     ("-p", "--pid"), "PID of a running python program to spy on, in decimal or hex",
-    complete_func=ProcessID(),
+    complete_func=PidDetails(),
 )
 full_filenames_option = Option(
     ("--full-filenames",),
