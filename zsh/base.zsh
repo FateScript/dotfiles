@@ -295,7 +295,7 @@ rgopen()
     fi
 }
 
-_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal conda ssh his py pip git)' }
+_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal zshenv conda ssh his py pip git rclone)' }
 
 conf()
 {
@@ -309,6 +309,7 @@ conf()
         zshal)      vim $HOME/.zsh/alias.zsh ;;
         zshins)     vim $HOME/.zsh/install.zsh;;
         zshlocal)   vim $HOME/.zsh.local;;
+        zshenv)     vim $HOME/.zsh.env;;
         conda)      vim $HOME/.condarc ;;
         ssh)        vim $HOME/.ssh/config;;
         his)        vim $HOME/.zsh_history;;

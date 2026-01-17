@@ -68,7 +68,8 @@ safe_add_fpath "$HOME/.zsh/Completion"
 safe_add_fpath "$HOME/.zsh/functions"
 
 safe_source "$HOME"/.fzf.zsh
-safe_source "$HOME"/.zsh.local  # local file is used to store local configuration
+safe_source "$HOME"/.zsh.env    # local file is used to store local env
+safe_source "$HOME"/.zsh.local  # local file is used to store local configuration/alias/function
 safe_source "$HOME"/.zsh/utils.zsh
 
 # Activate virtual env and save the path as a tmux variable,

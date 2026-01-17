@@ -15,6 +15,7 @@
     # branchless:
     # https://stackoverflow.com/questions/204461/git-squash-fixup-earlier-commit
     fixup = !sh -c 'REV=$(git rev-parse $1) && git commit --fixup $@ && git rebase -i --autostash --autosquash $REV^ && git restack' -
+    yolo = !git amend && git pushstack --yes
 
 [branchless "next"]
 	interactive = true
