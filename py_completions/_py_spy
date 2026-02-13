@@ -11,7 +11,7 @@ _pids_details() {
     opt="${line%% *}"
     msg="${line#* }"
     choices+=("$opt:$msg")
-  done < <(ps --no-headers -eo pid,args)
+  done < <(ps --no-headers -eo pid,args| awk '{$1=$1; print}')
   _describe -t choices 'choices' choices
 }
 
