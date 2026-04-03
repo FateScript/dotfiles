@@ -84,6 +84,7 @@
       "ms-vscode.cpptools": ["workspace"],
       "eamodio.gitlens": ["workspace"],
       // local plugin
+      "WakaTime.vscode-wakatime": ["ui"],
       "GitHub.copilot": ["ui"],
       "GitHub.copilot-chat": ["ui"],
       "James-Yu.latex-workshop": ["ui"],
@@ -105,10 +106,13 @@
       "plaintext": true,
       "markdown": true,
       "scminput": false,
-      "yaml": true
+      "yaml": true,
+      "python": true,
+      "c": true
     },
     "editor.stickyScroll.enabled": true,
     "workbench.editorAssociations": {
+      "git-rebase-todo": "default",
       "*.pdf": "latex-workshop-pdf-hook"
     },
     // compile tools and command for latex-workshop
@@ -137,4 +141,7 @@
       "editor.formatOnType": true
     },
     "github.copilot.editor.enableAutoCompletions": true,
+    "git.blame.statusBarItem.enabled": true,
+    "python.analysis.extraPaths": [
+    ]
 }

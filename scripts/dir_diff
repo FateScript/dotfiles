@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""
+dir_diff - Compare MD5 hashes of files with same names in two directories
+
+Usage: dir_diff <dir1> <dir2>
+Example: dir_diff /path/to/model_v1 /path/to/model_v2
+"""
+
+import hashlib
+import sys
+from pathlib import Path
+
+
+def compute_md5(filepath: Path) -> str:
+    """Compute MD5 hash of a file."""
+    md5_hash = hashlib.md5()
+    with open(filepath, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            md5_hash.update(chunk)
+    return md5_hash.hexdigest()
+
+
+def get_all_files(directory: Path) -> set:
+    """Get all files in directory (relative paths)."""
+    files = set()
+    for f in directory.rglob("*"):
+        if f.is_file():
+            files.add(f.relative_to(directory))
+    return files
+
+
+def main():
+    if len(sys.argv) != 3:
+        print(f"Usage: {sys.argv[0]} <dir1> <dir2>")
+        print("Compare MD5 hashes of files with same names in two directories")
+        sys.exit(1)
+
+    dir1 = Path(sys.argv[1]).resolve()
+    dir2 = Path(sys.argv[2]).resolve()
+
+    if not dir1.is_dir():
+        print(f"Error: '{dir1}' is not a directory")
+        sys.exit(1)
+
+    if not dir2.is_dir():
+        print(f"Error: '{dir2}' is not a directory")
+        sys.exit(1)
+
+    print(f"Comparing: {dir1}")
+    print(f"       vs: {dir2}")
+    print()
+
+    files1 = get_all_files(dir1)
+    files2 = get_all_files(dir2)
+
+    common_files = sorted(files1 & files2)
+    only_in_dir1 = sorted(files1 - files2)
+    only_in_dir2 = sorted(files2 - files1)
+
+    same_count = 0
+    diff_count = 0
+
+    for rel_path in common_files:
+        file1 = dir1 / rel_path
+        file2 = dir2 / rel_path
+
+        hash1 = compute_md5(file1)
+        hash2 = compute_md5(file2)
+
+        if hash1 == hash2:
+            print(f"✅ {str(rel_path):<60} same")
+            same_count += 1
+        else:
+            print(f"❌ {str(rel_path):<60} DIFFERENT")
+            diff_count += 1
+
+    print()
+    print("-" * 40)
+    print(f"Summary: {same_count} same, {diff_count} different")
+
+    if only_in_dir1:
+        print()
+        print(f"Only in {dir1}:")
+        for f in only_in_dir1:
+            print(f"   {f}")
+
+    if only_in_dir2:
+        print()
+        print(f"Only in {dir2}:")
+        for f in only_in_dir2:
+            print(f"   {f}")
+
+
+if __name__ == "__main__":
+    main()
