@@ -585,3 +585,57 @@ pretty_curl() {
 
     curl -s "$url" | jq .
 }
+
+killport() {
+    local port=""
+    local force=false
+
+    # parse args, support `killport -y 8080` and `killport 8080 -y`
+    if [[ "$1" == "-y" ]]; then
+        force=true
+        port=$2
+    elif [[ "$2" == "-y" ]]; then
+        force=true
+        port=$1
+    else
+        port=$1
+    fi
+
+    if [[ -z "$port" ]]; then
+        echo "Usage: killport <port_number> [-y]"
+        return 1
+    fi
+
+    # -i: search for network connections
+    # -t: only show PID
+    # -sTCP:LISTEN: only check for listening state
+    local pid=$(lsof -ti :$port -sTCP:LISTEN)
+
+    if [[ -z "$pid" ]]; then
+        echo "No process found on port $port."
+        return 0
+    fi
+
+    # list detailed info to verify the process before killing
+    echo "Process found on port $port:"
+    lsof -i :$port -sTCP:LISTEN
+
+    if [[ "$force" == true ]]; then
+        echo "Force killing process on port $port (PID: $pid)..."
+        kill -9 $pid
+        return 0
+    fi
+
+    echo -n "Kill this process? [y]/n: "
+    # -k 1 means read only one character, -r prevents backslash from escaping
+    read -k 1 -r response
+    echo ""
+
+    if [[ "$response" =~ ^[Yy]$ ]] || [[ "$response" == $'\n' ]]; then
+        echo "Killing PID: $pid"
+        kill -9 $pid
+        echo "Done."
+    else
+        echo "Cancelled."
+    fi
+}
