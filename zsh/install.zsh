@@ -181,11 +181,13 @@ update_conf()
     # tmux and zsh
     cp tmux.conf $HOME/.tmux.conf
     if [ -d $HOME/.zsh ]; then
-        echo "remove $HOME/.zsh dir"
-        rm -rf $HOME/.zsh
+        echo "clean $HOME/.zsh dir (preserving Completion)"
+        find $HOME/.zsh -mindepth 1 -maxdepth 1 ! -name Completion -exec rm -rf {} +
     fi
     cp zshrc $HOME/.zshrc
-    cp -r zsh $HOME/.zsh
+    mkdir -p $HOME/.zsh $HOME/.zsh/Completion
+    cp -r zsh/. $HOME/.zsh/
+    cp py_completions/_* $HOME/.zsh/Completion/ 2>/dev/null
 
     if ! [ -f "$HOME/.zsh.local" ]; then
         echo "update zsh.local, for local usage"
