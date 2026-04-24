@@ -1,0 +1,26 @@
+#compdef dir_diff
+compdef _dir_diff dir_diff
+zstyle ':completion:*:dir_diff:*' sort false
+
+_dir_diff() {
+  _arguments \
+    '*'{--exclude,-e}'[Exclude files matching glob (basename or relative path). Repeatable.]:Default:_default' \
+    '*'{--include,-i}'[Only include files matching glob. Repeatable.]:Default:_default' \
+    '*--exclude-dir[Exclude paths with a directory component matching glob. Repeatable.]:Directory:_files -/' \
+    '(--exclude-dotfiles)'--exclude-dotfiles'[Skip files/dirs whose name starts with '\''.'\'']' \
+    '(--respect-gitignore)'--respect-gitignore'[Filter out files ignored by each directory'\''s git repo (uses `git check-ignore`)]' \
+    '(--follow-symlinks)'--follow-symlinks'[Follow symbolic links when walking directories]' \
+    '(--algo)'--algo'[Comparison method (default: md5). '\''size'\'' and '\''mtime'\'' skip hashing for speed.]:choices:(md5 sha1 sha256 size mtime)' \
+    '(--only-diff)'--only-diff'[Only print files that differ (hide '\''same'\'' lines)]' \
+    '(--quiet -q)'{--quiet,-q}'[Print only the summary line]' \
+    '(--no-emoji)'--no-emoji'[Use plain text markers instead of ✅/❌]' \
+    '(--sort)'--sort'[Sort order: name (default) or status (differences first)]:choices:(name status)' \
+    '(--progress)'--progress'[Show progress bar on stderr while hashing]' \
+    '(--output -o)'{--output,-o}'[Write output to FILE instead of stdout]:Files:_files' \
+    '(--jobs -j)'{--jobs,-j}'[Hash files in parallel with N workers (default: 1)]' \
+    '(--exit-code)'--exit-code'[Exit 1 if any differences are found]' \
+    '1:Directory:_files -/' \
+    '2:Directory:_files -/'
+}
+
+_dir_diff

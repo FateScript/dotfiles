@@ -1,94 +1,306 @@
 #!/usr/bin/env python3
 """
-dir_diff - Compare MD5 hashes of files with same names in two directories
+dir_diff - Compare files with the same relative path in two directories
 
-Usage: dir_diff <dir1> <dir2>
-Example: dir_diff /path/to/model_v1 /path/to/model_v2
+Usage: dir_diff [OPTIONS] <dir1> <dir2>
+Examples:
+    dir_diff /path/to/model_v1 /path/to/model_v2
+    dir_diff -e '*.pyc' --exclude-dir __pycache__ --exclude-dotfiles a/ b/
+    dir_diff --algo sha256 -j 8 --progress a/ b/
+    dir_diff --respect-gitignore --only-diff --sort status --exit-code a/ b/
+    dir_diff -i '*.safetensors' -o diff.txt a/ b/
 """
 
+import argparse
 import hashlib
+import os
+import subprocess
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor
+from fnmatch import fnmatch
 from pathlib import Path
 
+HASH_ALGOS = ("md5", "sha1", "sha256")
+ALGOS = HASH_ALGOS + ("size", "mtime")
 
-def compute_md5(filepath: Path) -> str:
-    """Compute MD5 hash of a file."""
-    md5_hash = hashlib.md5()
+
+def file_signature(filepath: Path, algo: str) -> str:
+    if algo == "size":
+        return str(filepath.stat().st_size)
+    if algo == "mtime":
+        return str(filepath.stat().st_mtime_ns)
+    h = hashlib.new(algo)
     with open(filepath, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            md5_hash.update(chunk)
-    return md5_hash.hexdigest()
+        for chunk in iter(lambda: f.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
-def get_all_files(directory: Path) -> set:
-    """Get all files in directory (relative paths)."""
-    files = set()
-    for f in directory.rglob("*"):
-        if f.is_file():
-            files.add(f.relative_to(directory))
+def files_equal(f1: Path, f2: Path, algo: str) -> bool:
+    # For hash algos, size mismatch is a free early-out.
+    if algo in HASH_ALGOS and f1.stat().st_size != f2.stat().st_size:
+        return False
+    return file_signature(f1, algo) == file_signature(f2, algo)
+
+
+def path_matches_any(rel_path: Path, patterns) -> bool:
+    if not patterns:
+        return False
+    name = rel_path.name
+    rel_str = str(rel_path)
+    return any(fnmatch(name, p) or fnmatch(rel_str, p) for p in patterns)
+
+
+def should_include(rel_path: Path, args) -> bool:
+    parts = rel_path.parts
+
+    if args.exclude_dotfiles and any(p.startswith(".") for p in parts):
+        return False
+
+    for pat in args.exclude_dir:
+        if any(fnmatch(comp, pat) for comp in parts[:-1]):
+            return False
+
+    if path_matches_any(rel_path, args.exclude):
+        return False
+
+    if args.include and not path_matches_any(rel_path, args.include):
+        return False
+
+    return True
+
+
+def walk_files(directory: Path, follow_symlinks: bool):
+    for root, _dirs, filenames in os.walk(directory, followlinks=follow_symlinks):
+        root_path = Path(root)
+        for fn in filenames:
+            abs_path = root_path / fn
+            if not follow_symlinks and abs_path.is_symlink():
+                continue
+            yield abs_path.relative_to(directory)
+
+
+def apply_gitignore(directory: Path, files: set) -> set:
+    if not files:
+        return files
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(directory), "check-ignore", "--stdin"],
+            input="\n".join(str(f) for f in files),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        print(
+            f"Warning: git not found; --respect-gitignore skipped for {directory}",
+            file=sys.stderr,
+        )
+        return files
+    if proc.returncode == 128:
+        print(
+            f"Warning: '{directory}' is not a git repo; --respect-gitignore skipped",
+            file=sys.stderr,
+        )
+        return files
+    ignored = {Path(line.strip()) for line in proc.stdout.splitlines() if line.strip()}
+    return files - ignored
+
+
+def collect_files(directory: Path, args) -> set:
+    files = {
+        rel
+        for rel in walk_files(directory, args.follow_symlinks)
+        if should_include(rel, args)
+    }
+    if args.respect_gitignore:
+        files = apply_gitignore(directory, files)
     return files
 
 
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="dir_diff",
+        description="Compare files with same relative path in two directories",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("dir1", help="First directory")
+    parser.add_argument("dir2", help="Second directory")
+
+    g = parser.add_argument_group("filters")
+    g.add_argument(
+        "-e", "--exclude",
+        action="append", default=[], metavar="PATTERN",
+        help="Exclude files matching glob (basename or relative path). Repeatable.",
+    )
+    g.add_argument(
+        "-i", "--include",
+        action="append", default=[], metavar="PATTERN",
+        help="Only include files matching glob. Repeatable.",
+    )
+    g.add_argument(
+        "--exclude-dir",
+        action="append", default=[], metavar="PATTERN",
+        help="Exclude paths with a directory component matching glob. Repeatable.",
+    )
+    g.add_argument(
+        "--exclude-dotfiles", action="store_true",
+        help="Skip files/dirs whose name starts with '.'",
+    )
+    g.add_argument(
+        "--respect-gitignore", action="store_true",
+        help="Filter out files ignored by each directory's git repo (uses `git check-ignore`)",
+    )
+    g.add_argument(
+        "--follow-symlinks", action="store_true",
+        help="Follow symbolic links when walking directories",
+    )
+
+    g = parser.add_argument_group("comparison")
+    g.add_argument(
+        "--algo", choices=ALGOS, default="md5",
+        help="Comparison method (default: md5). 'size' and 'mtime' skip hashing for speed.",
+    )
+
+    g = parser.add_argument_group("output")
+    g.add_argument(
+        "--only-diff", action="store_true",
+        help="Only print files that differ (hide 'same' lines)",
+    )
+    g.add_argument(
+        "-q", "--quiet", action="store_true",
+        help="Print only the summary line",
+    )
+    g.add_argument(
+        "--no-emoji", action="store_true",
+        help="Use plain text markers instead of ✅/❌",
+    )
+    g.add_argument(
+        "--sort", choices=("name", "status"), default="name",
+        help="Sort order: name (default) or status (differences first)",
+    )
+    g.add_argument(
+        "--progress", action="store_true",
+        help="Show progress bar on stderr while hashing",
+    )
+    g.add_argument(
+        "-o", "--output", metavar="FILE",
+        help="Write output to FILE instead of stdout",
+    )
+
+    g = parser.add_argument_group("execution")
+    g.add_argument(
+        "-j", "--jobs",
+        type=int, default=1, metavar="N",
+        help="Hash files in parallel with N workers (default: 1)",
+    )
+    g.add_argument(
+        "--exit-code", action="store_true",
+        help="Exit 1 if any differences are found",
+    )
+    return parser
+
+
 def main():
-    if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]} <dir1> <dir2>")
-        print("Compare MD5 hashes of files with same names in two directories")
-        sys.exit(1)
+    args = build_parser().parse_args()
 
-    dir1 = Path(sys.argv[1]).resolve()
-    dir2 = Path(sys.argv[2]).resolve()
+    if args.jobs < 1:
+        print("Error: --jobs must be >= 1", file=sys.stderr)
+        sys.exit(2)
 
+    dir1 = Path(args.dir1).resolve()
+    dir2 = Path(args.dir2).resolve()
     if not dir1.is_dir():
-        print(f"Error: '{dir1}' is not a directory")
-        sys.exit(1)
-
+        print(f"Error: '{dir1}' is not a directory", file=sys.stderr)
+        sys.exit(2)
     if not dir2.is_dir():
-        print(f"Error: '{dir2}' is not a directory")
+        print(f"Error: '{dir2}' is not a directory", file=sys.stderr)
+        sys.exit(2)
+
+    files1 = collect_files(dir1, args)
+    files2 = collect_files(dir2, args)
+    common = sorted(files1 & files2)
+    only_in_1 = sorted(files1 - files2)
+    only_in_2 = sorted(files2 - files1)
+
+    progress_lock = threading.Lock()
+    progress_done = 0
+    total = len(common)
+    show_progress = args.progress and total > 0 and sys.stderr.isatty()
+
+    def compare_pair(rel_path: Path):
+        nonlocal progress_done
+        same = files_equal(dir1 / rel_path, dir2 / rel_path, args.algo)
+        if show_progress:
+            with progress_lock:
+                progress_done += 1
+                sys.stderr.write(f"\rHashing: {progress_done}/{total}")
+                sys.stderr.flush()
+        return rel_path, same
+
+    if args.jobs > 1 and common:
+        with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+            results = list(pool.map(compare_pair, common))
+    else:
+        results = [compare_pair(p) for p in common]
+
+    if show_progress:
+        sys.stderr.write("\n")
+        sys.stderr.flush()
+
+    if args.sort == "status":
+        # diffs first (same=False ranks before same=True), then by name
+        results.sort(key=lambda r: (r[1], str(r[0])))
+
+    same_marker = "[ OK]" if args.no_emoji else "✅"
+    diff_marker = "[DIFF]" if args.no_emoji else "❌"
+
+    out_stream = open(args.output, "w") if args.output else sys.stdout
+    try:
+        def pr(*a, **kw):
+            print(*a, **kw, file=out_stream)
+
+        if not args.quiet:
+            pr(f"Comparing: {dir1}")
+            pr(f"       vs: {dir2}")
+            pr(f"Algorithm: {args.algo}")
+            pr()
+
+        same_count = 0
+        diff_count = 0
+        for rel_path, same in results:
+            if same:
+                same_count += 1
+                if not args.quiet and not args.only_diff:
+                    pr(f"{same_marker} {str(rel_path):<60} same")
+            else:
+                diff_count += 1
+                if not args.quiet:
+                    pr(f"{diff_marker} {str(rel_path):<60} DIFFERENT")
+
+        if not args.quiet:
+            pr()
+            pr("-" * 40)
+        pr(f"Summary: {same_count} same, {diff_count} different")
+
+        if not args.quiet:
+            if only_in_1:
+                pr()
+                pr(f"Only in {dir1}:")
+                for f in only_in_1:
+                    pr(f"   {f}")
+            if only_in_2:
+                pr()
+                pr(f"Only in {dir2}:")
+                for f in only_in_2:
+                    pr(f"   {f}")
+    finally:
+        if args.output:
+            out_stream.close()
+
+    if args.exit_code and (diff_count > 0 or only_in_1 or only_in_2):
         sys.exit(1)
-
-    print(f"Comparing: {dir1}")
-    print(f"       vs: {dir2}")
-    print()
-
-    files1 = get_all_files(dir1)
-    files2 = get_all_files(dir2)
-
-    common_files = sorted(files1 & files2)
-    only_in_dir1 = sorted(files1 - files2)
-    only_in_dir2 = sorted(files2 - files1)
-
-    same_count = 0
-    diff_count = 0
-
-    for rel_path in common_files:
-        file1 = dir1 / rel_path
-        file2 = dir2 / rel_path
-
-        hash1 = compute_md5(file1)
-        hash2 = compute_md5(file2)
-
-        if hash1 == hash2:
-            print(f"✅ {str(rel_path):<60} same")
-            same_count += 1
-        else:
-            print(f"❌ {str(rel_path):<60} DIFFERENT")
-            diff_count += 1
-
-    print()
-    print("-" * 40)
-    print(f"Summary: {same_count} same, {diff_count} different")
-
-    if only_in_dir1:
-        print()
-        print(f"Only in {dir1}:")
-        for f in only_in_dir1:
-            print(f"   {f}")
-
-    if only_in_dir2:
-        print()
-        print(f"Only in {dir2}:")
-        for f in only_in_dir2:
-            print(f"   {f}")
 
 
 if __name__ == "__main__":
