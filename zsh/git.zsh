@@ -8,17 +8,21 @@ git_large_file()
     if [ -z "$1" ]; then
         topk=5
     fi
-    git rev-list --objects --all | grep "$(git verify-pack -v .git/objects/pack/*.idx | sort -k 3 -n | tail -$topk | awk '{print$1}')"
+    git rev-list --objects --all | grep "$(git verify-pack -v .git/objects/pack/*.idx | sort -k 3 -n | tail -"$topk" | awk '{print$1}')"
 }
 
 git_rm_history_file()
 {
     # apply filter branch to remove history file
     # usage: git_rm_history_file filename
-    if [ ! -z "$1" ]; then
-        git filter-branch -f --prune-empty --index-filter 'git rm -rf --cached --ignore-unmatch $1' --tag-name-filter cat -- --all
+    if [[ -z "$1" ]]; then
+        echo "Usage: git_rm_history_file filename"
+        return 1
     fi
 
+    git filter-branch -f --prune-empty \
+        --index-filter "git rm -rf --cached --ignore-unmatch '$1'" \
+        --tag-name-filter cat -- --all
 }
 
 git_gc_unreachable()
@@ -35,8 +39,8 @@ git_clean_branch()
     if [ -z "$1" ]; then
         origin=origin
     fi
-    git remote prune $origin
-    git branch --merged | egrep -v "(^\*|main)" | xargs git branch -d
+    git remote prune "$origin"
+    git branch --merged | grep -E -v "(^\*|main)" | xargs git branch -d
 }
 
 git_branch_push() {
@@ -81,7 +85,7 @@ git_branch_push() {
         return 1
     fi
 
-    # NOTE: using "$commit_hash:refs/heads/$remote_branch" will triger colon modifiers in zsh
+    # NOTE: using "$commit_hash:refs/heads/$remote_branch" will trigger colon modifiers in zsh
     # check https://stackoverflow.com/questions/55604684/colon-with-r-in-string-not-working-as-desired-under-zsh
     git push "${push_opts[@]}" "$remote" "${commit_hash}:refs/heads/${remote_branch}"
 }
@@ -96,7 +100,7 @@ git_llm_commit() {
     fi
 
     generate_commit_message() {
-        ollama run $model_name "
+        ollama run "$model_name" "
 You are an expert of git commit message writer.
 
 The following is the commit message format and example.
@@ -161,7 +165,7 @@ Please generate a concise, one-line commit message for these changes.
 
         read_input "Do you want to (a)ccept, (e)dit, (r)egenerate, or (c)ancel? "
         choice=$REPLY
-        echo $choice
+        echo "$choice"
 
         case "$choice" in
             a|A )

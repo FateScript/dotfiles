@@ -49,7 +49,7 @@ known() { command -v "$1" >/dev/null }
 # maybe cmd args || echo "not executed"
 maybe() { known "$1" && "$@" }
 
-# slient version maybe
+# silent version maybe
 alive() { known "$1" && "$@" >/dev/null 2>&1 }
 
 ensure_dir()
@@ -431,7 +431,7 @@ bak_back() {
 }
 
 p() {
-    # Execute the previous commands. Useage: p <number> or p
+    # Execute the previous commands. Usage: p <number> or p
     local num=${1:-1}  # Get the input argument or default to 1
     if ! [[ $num =~ ^[0-9]+$ ]]; then
         num=1  # Fallback to 1 if the input is not a number
