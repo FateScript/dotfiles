@@ -1,0 +1,133 @@
+#compdef tensorboard
+compdef _tensorboard tensorboard
+zstyle ':completion:*:tensorboard:*' sort false
+
+__random_available_ports() {
+  python3 -c \
+'def random_available_ports():
+    import random
+    import socket
+
+    ports = set()
+    attempts = 0
+    while len(ports) < 5 and attempts < 100:
+        attempts += 1
+        port = random.randint(10001, 65535)
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.bind(("127.0.0.1", port))
+        except OSError:
+            continue
+        ports.add(port)
+
+    for port in sorted(ports):
+        print(port)
+
+random_available_ports()'
+} 2>/dev/null
+
+_random_available_ports() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(__random_available_ports)
+  _describe -t choices 'choices' choices
+}
+
+
+_tensorboard_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "serve:Start local TensorBoard server"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_tensorboard() {
+  local state
+
+  _arguments -C \
+    '(--help -h)'{--help,-h}'[Show help]' \
+    '(--helpfull)'--helpfull'[Show full help]' \
+    '(--logdir)'--logdir'[TensorBoard log directory]:Directory:_files -/' \
+    '(--logdir_spec)'--logdir_spec'[Named log directory specification]:logdir spec:_default' \
+    '(--host)'--host'[Host to listen on]:Choices:(localhost 127.0.0.1 0.0.0.0)' \
+    '(--bind_all)'--bind_all'[Listen on all public interfaces]' \
+    '(--port)'--port'[Port to serve TensorBoard on]:Python Completion:_random_available_ports' \
+    '(--reuse_port)'--reuse_port'[Enable SO_REUSEPORT]:Choices:(true false True False 1 0)' \
+    '(--load_fast)'--load_fast'[Fast data loading mode]:Choices:(auto true false)' \
+    '(--extra_data_server_flags)'--extra_data_server_flags'[Extra data server flags]:flags:_default' \
+    '(--grpc_creds_type)'--grpc_creds_type'[gRPC credentials type]:Choices:(local ssl ssl_dev)' \
+    '(--grpc_data_provider)'--grpc_data_provider'[gRPC data provider port]:port:_default' \
+    '(--purge_orphaned_data)'--purge_orphaned_data'[Purge orphaned data]:Choices:(true false True False 1 0)' \
+    '(--db)'--db'[SQL database URI]:Files:_files' \
+    '(--db_import)'--db_import'[Import event files into DB]' \
+    '(--inspect)'--inspect'[Inspect event files]' \
+    '(--version_tb)'--version_tb'[Print TensorBoard version]' \
+    '(--tag)'--tag'[Tag to query with inspect]:tag:_default' \
+    '(--event_file)'--event_file'[Event file to inspect]:Files:_files' \
+    '(--path_prefix)'--path_prefix'[URL path prefix]:path prefix:_default' \
+    '(--window_title)'--window_title'[Browser window title]:title:_default' \
+    '(--max_reload_threads)'--max_reload_threads'[Maximum reload threads]:Choices:(1 2 4 8)' \
+    '(--reload_interval)'--reload_interval'[Reload interval seconds]:Choices:(0 1 5 10 30 60)' \
+    '(--reload_task)'--reload_task'[Background reload task]:Choices:(auto process blocking)' \
+    '(--reload_multifile)'--reload_multifile'[Poll multiple event files]:Choices:(true false True False 1 0)' \
+    '(--reload_multifile_inactive_secs)'--reload_multifile_inactive_secs'[Inactive event file threshold seconds]:Choices:(0 3600 86400 -1)' \
+    '(--generic_data)'--generic_data'[Generic data provider mode]:Choices:(auto true false)' \
+    '(--samples_per_plugin)'--samples_per_plugin'[Plugin sample limits]:Choices:(scalars=1000 images=10 histograms=500)' \
+    '(--detect_file_replacement)'--detect_file_replacement'[Detect replaced event files]:Choices:(true false True False 1 0)' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _tensorboard_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        serve)
+          _arguments \
+            '(--help -h)'{--help,-h}'[Show help]' \
+            '(--helpfull)'--helpfull'[Show full help]' \
+            '(--logdir)'--logdir'[TensorBoard log directory]:Directory:_files -/' \
+            '(--logdir_spec)'--logdir_spec'[Named log directory specification]:logdir spec:_default' \
+            '(--host)'--host'[Host to listen on]:Choices:(localhost 127.0.0.1 0.0.0.0)' \
+            '(--bind_all)'--bind_all'[Listen on all public interfaces]' \
+            '(--port)'--port'[Port to serve TensorBoard on]:Python Completion:_random_available_ports' \
+            '(--reuse_port)'--reuse_port'[Enable SO_REUSEPORT]:Choices:(true false True False 1 0)' \
+            '(--load_fast)'--load_fast'[Fast data loading mode]:Choices:(auto true false)' \
+            '(--extra_data_server_flags)'--extra_data_server_flags'[Extra data server flags]:flags:_default' \
+            '(--grpc_creds_type)'--grpc_creds_type'[gRPC credentials type]:Choices:(local ssl ssl_dev)' \
+            '(--grpc_data_provider)'--grpc_data_provider'[gRPC data provider port]:port:_default' \
+            '(--purge_orphaned_data)'--purge_orphaned_data'[Purge orphaned data]:Choices:(true false True False 1 0)' \
+            '(--db)'--db'[SQL database URI]:Files:_files' \
+            '(--db_import)'--db_import'[Import event files into DB]' \
+            '(--inspect)'--inspect'[Inspect event files]' \
+            '(--version_tb)'--version_tb'[Print TensorBoard version]' \
+            '(--tag)'--tag'[Tag to query with inspect]:tag:_default' \
+            '(--event_file)'--event_file'[Event file to inspect]:Files:_files' \
+            '(--path_prefix)'--path_prefix'[URL path prefix]:path prefix:_default' \
+            '(--window_title)'--window_title'[Browser window title]:title:_default' \
+            '(--max_reload_threads)'--max_reload_threads'[Maximum reload threads]:Choices:(1 2 4 8)' \
+            '(--reload_interval)'--reload_interval'[Reload interval seconds]:Choices:(0 1 5 10 30 60)' \
+            '(--reload_task)'--reload_task'[Background reload task]:Choices:(auto process blocking)' \
+            '(--reload_multifile)'--reload_multifile'[Poll multiple event files]:Choices:(true false True False 1 0)' \
+            '(--reload_multifile_inactive_secs)'--reload_multifile_inactive_secs'[Inactive event file threshold seconds]:Choices:(0 3600 86400 -1)' \
+            '(--generic_data)'--generic_data'[Generic data provider mode]:Choices:(auto true false)' \
+            '(--samples_per_plugin)'--samples_per_plugin'[Plugin sample limits]:Choices:(scalars=1000 images=10 histograms=500)' \
+            '(--detect_file_replacement)'--detect_file_replacement'[Detect replaced event files]:Choices:(true false True False 1 0)'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_tensorboard
