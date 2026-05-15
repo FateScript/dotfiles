@@ -1,0 +1,1236 @@
+#compdef codex
+compdef _codex codex
+zstyle ':completion:*:codex:*' sort false
+
+
+_git_branches_and_tags() {
+  local branches tags
+  branches=("${(f)$(git for-each-ref --format='%(refname:short)' refs/heads)}")
+  tags=("${(f)$(git for-each-ref --format='%(refname:short)' refs/tags)}")
+  _values 'branch' $branches 'tag' $tags
+}
+
+
+_git_commits() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(git log --oneline -n 40 --format='%h %s')
+  _describe -t choices 'choices' choices
+}
+
+
+_git_remote_branches() {
+  local branches
+  branches=("${(f)$(git for-each-ref --format='%(refname:short)' refs/remotes)}")
+  _values 'remote branch' $branches
+}
+
+__list_features() {
+  python3 -c \
+'def list_features():
+    try:
+        import subprocess
+
+        output = subprocess.check_output(
+            ["codex", "features", "list"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=2,
+        )
+    except Exception:
+        return
+
+    for line in output.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("Feature", "-", "[")):
+            continue
+        feature = stripped.split()[0]
+        if feature not in {"Name", "Key"}:
+            print(stripped)
+
+list_features()'
+} 2>/dev/null
+
+_list_features() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(__list_features)
+  _describe -t choices 'choices' choices
+}
+
+__list_mcp_servers() {
+  python3 -c \
+'def list_mcp_servers():
+    import os
+    from pathlib import Path
+
+    try:
+        import tomllib
+
+        config_path = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser() / "config.toml"
+        with config_path.open("rb") as f:
+            config = tomllib.load(f)
+    except Exception:
+        return
+
+    servers = config.get("mcp_servers", {})
+    if not isinstance(servers, dict):
+        return
+    for name, config in servers.items():
+        desc = ""
+        if isinstance(config, dict):
+            desc = config.get("url") or " ".join(config.get("command", [])[:1])
+        print(f"{name} {desc}".rstrip())
+
+list_mcp_servers()'
+} 2>/dev/null
+
+_list_mcp_servers() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(__list_mcp_servers)
+  _describe -t choices 'choices' choices
+}
+
+__list_plugin_marketplaces() {
+  python3 -c \
+'def list_plugin_marketplaces():
+    import json
+    import os
+    from pathlib import Path
+
+    config_path = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser() / "plugins" / "marketplace.json"
+    if not config_path.exists():
+        return
+    try:
+        data = json.loads(config_path.read_text())
+    except Exception:
+        return
+
+    marketplaces = data.get("marketplaces", data)
+    if isinstance(marketplaces, dict):
+        for name in marketplaces:
+            print(name)
+    elif isinstance(marketplaces, list):
+        for item in marketplaces:
+            if isinstance(item, str):
+                print(item)
+            elif isinstance(item, dict):
+                name = item.get("name") or item.get("id")
+                if name:
+                    print(name)
+
+list_plugin_marketplaces()'
+} 2>/dev/null
+
+_list_plugin_marketplaces() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(__list_plugin_marketplaces)
+  _describe -t choices 'choices' choices
+}
+
+__list_profiles() {
+  python3 -c \
+'def list_profiles():
+    import os
+    from pathlib import Path
+
+    try:
+        import tomllib
+
+        config_path = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser() / "config.toml"
+        with config_path.open("rb") as f:
+            config = tomllib.load(f)
+    except Exception:
+        return
+
+    profiles = config.get("profiles", {})
+    if not isinstance(profiles, dict):
+        return
+    for name in profiles:
+        print(name)
+
+list_profiles()'
+} 2>/dev/null
+
+_list_profiles() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(__list_profiles)
+  _describe -t choices 'choices' choices
+}
+
+__list_sessions() {
+  python3 -c \
+'def list_sessions():
+    import json
+    import os
+    from pathlib import Path
+
+    sessions_dir = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser() / "sessions"
+    if not sessions_dir.exists():
+        return
+
+    for session_file in sorted(sessions_dir.rglob("*.jsonl"), reverse=True):
+        session_id = ""
+        desc = ""
+        fallback_desc = ""
+        try:
+            with session_file.open() as f:
+                for line in f:
+                    event = json.loads(line)
+                    payload = event.get("payload") or {}
+
+                    if event.get("type") == "session_meta":
+                        meta = payload or event.get("session_meta") or {}
+                        session_id = meta.get("id") or session_file.stem.removeprefix("rollout-")
+                        cwd = meta.get("cwd") or ""
+                        timestamp = meta.get("timestamp") or event.get("timestamp") or ""
+                        fallback_desc = " ".join(x for x in (timestamp, cwd) if x)
+                        continue
+
+                    if payload.get("type") == "user_message":
+                        message = payload.get("message") or ""
+                    elif payload.get("type") == "message" and payload.get("role") == "user":
+                        parts = payload.get("content") or []
+                        message = " ".join(
+                            part.get("text", "") for part in parts
+                            if isinstance(part, dict) and part.get("type") == "input_text"
+                        )
+                    else:
+                        continue
+
+                    message = " ".join(message.split())
+                    if (
+                        message
+                        and not message.startswith("<environment_context>")
+                        and not message.startswith("# AGENTS.md instructions")
+                    ):
+                        desc = message
+                        break
+        except Exception:
+            pass
+        if session_id:
+            print(f"{session_id} {desc or fallback_desc}".rstrip())
+
+list_sessions()'
+} 2>/dev/null
+
+_list_sessions() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(__list_sessions)
+  _describe -t choices 'choices' choices
+}
+
+
+_codex_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "exec:Run Codex non-interactively"
+    "e:Run Codex non-interactively"
+    "review:Run a code review non-interactively"
+    "login:Manage login"
+    "logout:Remove stored authentication credentials"
+    "mcp:Manage external MCP servers"
+    "plugin:Manage Codex plugins"
+    "mcp-server:Start Codex as an MCP server"
+    "app-server:Run the app server or related tooling"
+    "remote-control:Start a headless app-server with remote control"
+    "completion:Generate shell completion scripts"
+    "update:Update Codex"
+    "sandbox:Run commands within a Codex sandbox"
+    "debug:Debugging tools"
+    "apply:Apply the latest diff produced by Codex"
+    "resume:Resume a previous interactive session"
+    "fork:Fork a previous interactive session"
+    "cloud:Browse tasks from Codex Cloud and apply changes locally"
+    "exec-server:Run the standalone exec-server service"
+    "features:Inspect feature flags"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_features_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "list:List known features"
+    "enable:Enable a feature in config.toml"
+    "disable:Disable a feature in config.toml"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_features() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_features_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        list)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+        enable)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '1:Python Completion:_list_features'
+          ;;
+        disable)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '1:Python Completion:_list_features'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex_cloud_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "exec:Submit a Codex Cloud task"
+    "status:Show Codex Cloud task status"
+    "list:List Codex Cloud tasks"
+    "apply:Apply a Codex Cloud task diff"
+    "diff:Show a Codex Cloud task diff"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_cloud() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '(--version -V)'{--version,-V}'[Print version]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_cloud_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        exec)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--env)'--env'[Target environment id]:Default:_default' \
+            '(--attempts)'--attempts'[Number of assistant attempts]:Choices:(1 2 3 4 5)' \
+            '(--branch)'--branch'[Git branch]:GitRemoteBranches:_git_remote_branches' \
+            '1:Default:_default'
+          ;;
+        status)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '1:Default:_default'
+          ;;
+        list)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--env)'--env'[Filter by environment id]:Default:_default' \
+            '(--limit)'--limit'[Maximum tasks to return]:Choices:(1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20)' \
+            '(--cursor)'--cursor'[Pagination cursor]:Default:_default' \
+            '(--json)'--json'[Emit JSON]'
+          ;;
+        apply)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--attempt)'--attempt'[Attempt number]:Default:_default' \
+            '1:Default:_default'
+          ;;
+        diff)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--attempt)'--attempt'[Attempt number]:Default:_default' \
+            '1:Default:_default'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex_debug_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "models:Render the raw model catalog as JSON"
+    "app-server:Debug app server"
+    "prompt-input:Render model-visible prompt input as JSON"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_debug_app-server_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "send-message-v2:Send an app-server message"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_debug_app-server() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_debug_app-server_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        send-message-v2)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex_debug() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_debug_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        models)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+        app-server)
+          _codex_debug_app-server
+          ;;
+        prompt-input)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex_sandbox_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "linux:Run a command under the Linux sandbox"
+    "macos:Run a command under Seatbelt"
+    "windows:Run a command under Windows restricted token"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_sandbox() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_sandbox_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        linux)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--permissions-profile)'--permissions-profile'[Named permissions profile]:Default:_default' \
+            '(--cd -C)'{--cd,-C}'[Working directory]:Directory:_files -/' \
+            '(--include-managed-config)'--include-managed-config'[Include managed requirements]' \
+            '*:Default:_default'
+          ;;
+        macos)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--permissions-profile)'--permissions-profile'[Named permissions profile]:Default:_default' \
+            '(--cd -C)'{--cd,-C}'[Working directory]:Directory:_files -/' \
+            '(--include-managed-config)'--include-managed-config'[Include managed requirements]' \
+            '*:Default:_default'
+          ;;
+        windows)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--permissions-profile)'--permissions-profile'[Named permissions profile]:Default:_default' \
+            '(--cd -C)'{--cd,-C}'[Working directory]:Directory:_files -/' \
+            '(--include-managed-config)'--include-managed-config'[Include managed requirements]' \
+            '*:Default:_default'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex_app-server_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "proxy:Proxy stdio bytes to the app-server control socket"
+    "generate-ts:Generate TypeScript bindings"
+    "generate-json-schema:Generate JSON Schema"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_app-server() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '(--listen)'--listen'[Transport endpoint URL]:Default:_default' \
+    '(--analytics-default-enabled)'--analytics-default-enabled'[Enable analytics by default]' \
+    '(--ws-auth)'--ws-auth'[Websocket auth mode]:Choices:(capability-token signed-bearer-token)' \
+    '(--ws-token-file)'--ws-token-file'[Capability token file]:Files:_files' \
+    '(--ws-token-sha256)'--ws-token-sha256'[Capability token SHA-256]:Default:_default' \
+    '(--ws-shared-secret-file)'--ws-shared-secret-file'[JWT shared secret file]:Files:_files' \
+    '(--ws-issuer)'--ws-issuer'[JWT issuer]:Default:_default' \
+    '(--ws-audience)'--ws-audience'[JWT audience]:Default:_default' \
+    '(--ws-max-clock-skew-seconds)'--ws-max-clock-skew-seconds'[JWT max clock skew seconds]:Default:_default' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_app-server_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        proxy)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+        generate-ts)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+        generate-json-schema)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex_plugin_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "marketplace:Manage plugin marketplaces"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_plugin_marketplace_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "add:Add a plugin marketplace"
+    "upgrade:Upgrade plugin marketplaces"
+    "remove:Remove a plugin marketplace"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_plugin_marketplace() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_plugin_marketplace_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        add)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--ref)'--ref'[Git ref]:GitBranches:_git_branches_and_tags' \
+            '(--sparse)'--sparse'[Sparse path]:Directory:_files -/' \
+            '1:Directory:_files -/'
+          ;;
+        upgrade)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+        remove)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '1:Python Completion:_list_plugin_marketplaces'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex_plugin() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_plugin_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        marketplace)
+          _codex_plugin_marketplace
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex_mcp_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "list:List configured MCP servers"
+    "get:Show an MCP server configuration"
+    "add:Add an MCP server"
+    "remove:Remove an MCP server"
+    "login:Authenticate with an MCP server"
+    "logout:Deauthenticate an MCP server"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_mcp() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_mcp_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        list)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+        get)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--json)'--json'[Output as JSON]' \
+            '1:Python Completion:_list_mcp_servers'
+          ;;
+        add)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '*--env[Environment variable]:Default:_default' \
+            '(--url)'--url'[Streamable HTTP MCP server URL]:URLs:_urls' \
+            '(--bearer-token-env-var)'--bearer-token-env-var'[Bearer token environment variable]:Environment variable:_parameters' \
+            '1:Default:_default' \
+            '*:Default:_default'
+          ;;
+        remove)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '1:Python Completion:_list_mcp_servers'
+          ;;
+        login)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--scopes)'--scopes'[OAuth scopes]:Default:_default' \
+            '1:Python Completion:_list_mcp_servers'
+          ;;
+        logout)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '1:Python Completion:_list_mcp_servers'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex_login_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "status:Show login status"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_login() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '(--with-api-key)'--with-api-key'[Read API key from stdin]' \
+    '(--with-access-token)'--with-access-token'[Read access token from stdin]' \
+    '(--device-auth)'--device-auth'[Use device authentication]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_login_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        status)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex_e_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "resume:Resume a previous non-interactive session"
+    "review:Run a code review against the current repository"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_e() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '(--version -V)'{--version,-V}'[Print version]' \
+    '*'{--image,-i}'[Attach image to the initial prompt]:Files:_files' \
+    '(--model -m)'{--model,-m}'[Model the agent should use]:Choices:(gpt-5.5 gpt-5.4 gpt-5.4-mini gpt-5.3-codex gpt-5.3-codex-spark gpt-5.2 o3 o4-mini)' \
+    '(--oss)'--oss'[Use open-source provider]' \
+    '(--local-provider)'--local-provider'[Specify local OSS provider]:Choices:(lmstudio ollama)' \
+    '(--profile -p)'{--profile,-p}'[Configuration profile]:Python Completion:_list_profiles' \
+    '(--sandbox -s)'{--sandbox,-s}'[Sandbox policy]:Choices:(read-only workspace-write danger-full-access)' \
+    '(--dangerously-bypass-approvals-and-sandbox)'--dangerously-bypass-approvals-and-sandbox'[Skip approvals and sandboxing]' \
+    '(--cd -C)'{--cd,-C}'[Working root]:Directory:_files -/' \
+    '*--add-dir[Additional writable directory]:Directory:_files -/' \
+    '(--ask-for-approval -a)'{--ask-for-approval,-a}'[Approval policy]:Choices:(untrusted on-request on-failure never)' \
+    '(--search)'--search'[Enable live web search]' \
+    '(--no-alt-screen)'--no-alt-screen'[Disable alternate screen mode]' \
+    '(--remote)'--remote'[Remote app-server websocket endpoint]:URLs:_urls' \
+    '(--remote-auth-token-env)'--remote-auth-token-env'[Bearer token environment variable]:Environment variable:_parameters' \
+    '(--skip-git-repo-check)'--skip-git-repo-check'[Allow running outside a Git repository]' \
+    '(--ephemeral)'--ephemeral'[Run without persisting session files]' \
+    '(--ignore-user-config)'--ignore-user-config'[Do not load user config.toml]' \
+    '(--ignore-rules)'--ignore-rules'[Do not load execpolicy rules]' \
+    '(--output-schema)'--output-schema'[Path to JSON Schema output file]:Files:_files' \
+    '(--color)'--color'[Output color setting]:Choices:(always never auto)' \
+    '(--json)'--json'[Print events as JSONL]' \
+    '(--output-last-message -o)'{--output-last-message,-o}'[File for last agent message]:Files:_files' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_e_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        resume)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--last)'--last'[Resume the most recent session]' \
+            '1:Python Completion:_list_sessions'
+          ;;
+        review)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '1:Default:_default'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex_exec_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "resume:Resume a previous non-interactive session"
+    "review:Run a code review against the current repository"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_codex_exec() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '(--version -V)'{--version,-V}'[Print version]' \
+    '*'{--image,-i}'[Attach image to the initial prompt]:Files:_files' \
+    '(--model -m)'{--model,-m}'[Model the agent should use]:Choices:(gpt-5.5 gpt-5.4 gpt-5.4-mini gpt-5.3-codex gpt-5.3-codex-spark gpt-5.2 o3 o4-mini)' \
+    '(--oss)'--oss'[Use open-source provider]' \
+    '(--local-provider)'--local-provider'[Specify local OSS provider]:Choices:(lmstudio ollama)' \
+    '(--profile -p)'{--profile,-p}'[Configuration profile]:Python Completion:_list_profiles' \
+    '(--sandbox -s)'{--sandbox,-s}'[Sandbox policy]:Choices:(read-only workspace-write danger-full-access)' \
+    '(--dangerously-bypass-approvals-and-sandbox)'--dangerously-bypass-approvals-and-sandbox'[Skip approvals and sandboxing]' \
+    '(--cd -C)'{--cd,-C}'[Working root]:Directory:_files -/' \
+    '*--add-dir[Additional writable directory]:Directory:_files -/' \
+    '(--ask-for-approval -a)'{--ask-for-approval,-a}'[Approval policy]:Choices:(untrusted on-request on-failure never)' \
+    '(--search)'--search'[Enable live web search]' \
+    '(--no-alt-screen)'--no-alt-screen'[Disable alternate screen mode]' \
+    '(--remote)'--remote'[Remote app-server websocket endpoint]:URLs:_urls' \
+    '(--remote-auth-token-env)'--remote-auth-token-env'[Bearer token environment variable]:Environment variable:_parameters' \
+    '(--skip-git-repo-check)'--skip-git-repo-check'[Allow running outside a Git repository]' \
+    '(--ephemeral)'--ephemeral'[Run without persisting session files]' \
+    '(--ignore-user-config)'--ignore-user-config'[Do not load user config.toml]' \
+    '(--ignore-rules)'--ignore-rules'[Do not load execpolicy rules]' \
+    '(--output-schema)'--output-schema'[Path to JSON Schema output file]:Files:_files' \
+    '(--color)'--color'[Output color setting]:Choices:(always never auto)' \
+    '(--json)'--json'[Print events as JSONL]' \
+    '(--output-last-message -o)'{--output-last-message,-o}'[File for last agent message]:Files:_files' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_exec_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        resume)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--last)'--last'[Resume the most recent session]' \
+            '1:Python Completion:_list_sessions'
+          ;;
+        review)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '1:Default:_default'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex() {
+  local state
+
+  _arguments -C \
+    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+    '*--enable[Enable a feature]:Python Completion:_list_features' \
+    '*--disable[Disable a feature]:Python Completion:_list_features' \
+    '(--help -h)'{--help,-h}'[Print help]' \
+    '(--version -V)'{--version,-V}'[Print version]' \
+    '*'{--image,-i}'[Attach image to the initial prompt]:Files:_files' \
+    '(--model -m)'{--model,-m}'[Model the agent should use]:Choices:(gpt-5.5 gpt-5.4 gpt-5.4-mini gpt-5.3-codex gpt-5.3-codex-spark gpt-5.2 o3 o4-mini)' \
+    '(--oss)'--oss'[Use open-source provider]' \
+    '(--local-provider)'--local-provider'[Specify local OSS provider]:Choices:(lmstudio ollama)' \
+    '(--profile -p)'{--profile,-p}'[Configuration profile]:Python Completion:_list_profiles' \
+    '(--sandbox -s)'{--sandbox,-s}'[Sandbox policy]:Choices:(read-only workspace-write danger-full-access)' \
+    '(--dangerously-bypass-approvals-and-sandbox)'--dangerously-bypass-approvals-and-sandbox'[Skip approvals and sandboxing]' \
+    '(--cd -C)'{--cd,-C}'[Working root]:Directory:_files -/' \
+    '*--add-dir[Additional writable directory]:Directory:_files -/' \
+    '(--ask-for-approval -a)'{--ask-for-approval,-a}'[Approval policy]:Choices:(untrusted on-request on-failure never)' \
+    '(--search)'--search'[Enable live web search]' \
+    '(--no-alt-screen)'--no-alt-screen'[Disable alternate screen mode]' \
+    '(--remote)'--remote'[Remote app-server websocket endpoint]:URLs:_urls' \
+    '(--remote-auth-token-env)'--remote-auth-token-env'[Bearer token environment variable]:Environment variable:_parameters' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _codex_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        exec)
+          _codex_exec
+          ;;
+        e)
+          _codex_e
+          ;;
+        review)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--uncommitted)'--uncommitted'[Review staged, unstaged, and untracked changes]' \
+            '(--base)'--base'[Review changes against base branch]:GitRemoteBranches:_git_remote_branches' \
+            '(--commit)'--commit'[Review changes introduced by commit]:GitCommits:_git_commits' \
+            '(--title)'--title'[Review title]:Default:_default' \
+            '1:Default:_default'
+          ;;
+        login)
+          _codex_login
+          ;;
+        logout)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+        mcp)
+          _codex_mcp
+          ;;
+        plugin)
+          _codex_plugin
+          ;;
+        mcp-server)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+        app-server)
+          _codex_app-server
+          ;;
+        remote-control)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+        completion)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '1:Choices:(bash elvish fish powershell zsh)'
+          ;;
+        update)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]'
+          ;;
+        sandbox)
+          _codex_sandbox
+          ;;
+        debug)
+          _codex_debug
+          ;;
+        apply)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '1:Default:_default'
+          ;;
+        resume)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--version -V)'{--version,-V}'[Print version]' \
+            '(--last)'--last'[Use most recent session]' \
+            '(--all)'--all'[Show all sessions]' \
+            '(--include-non-interactive)'--include-non-interactive'[Include non-interactive sessions]' \
+            '*'{--image,-i}'[Attach image to the initial prompt]:Files:_files' \
+            '(--model -m)'{--model,-m}'[Model the agent should use]:Choices:(gpt-5.5 gpt-5.4 gpt-5.4-mini gpt-5.3-codex gpt-5.3-codex-spark gpt-5.2 o3 o4-mini)' \
+            '(--oss)'--oss'[Use open-source provider]' \
+            '(--local-provider)'--local-provider'[Specify local OSS provider]:Choices:(lmstudio ollama)' \
+            '(--profile -p)'{--profile,-p}'[Configuration profile]:Python Completion:_list_profiles' \
+            '(--sandbox -s)'{--sandbox,-s}'[Sandbox policy]:Choices:(read-only workspace-write danger-full-access)' \
+            '(--dangerously-bypass-approvals-and-sandbox)'--dangerously-bypass-approvals-and-sandbox'[Skip approvals and sandboxing]' \
+            '(--cd -C)'{--cd,-C}'[Working root]:Directory:_files -/' \
+            '*--add-dir[Additional writable directory]:Directory:_files -/' \
+            '(--ask-for-approval -a)'{--ask-for-approval,-a}'[Approval policy]:Choices:(untrusted on-request on-failure never)' \
+            '(--search)'--search'[Enable live web search]' \
+            '(--no-alt-screen)'--no-alt-screen'[Disable alternate screen mode]' \
+            '(--remote)'--remote'[Remote app-server websocket endpoint]:URLs:_urls' \
+            '(--remote-auth-token-env)'--remote-auth-token-env'[Bearer token environment variable]:Environment variable:_parameters' \
+            '1:Python Completion:_list_sessions' \
+            '2:Default:_default'
+          ;;
+        fork)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--version -V)'{--version,-V}'[Print version]' \
+            '(--last)'--last'[Use most recent session]' \
+            '(--all)'--all'[Show all sessions]' \
+            '(--include-non-interactive)'--include-non-interactive'[Include non-interactive sessions]' \
+            '*'{--image,-i}'[Attach image to the initial prompt]:Files:_files' \
+            '(--model -m)'{--model,-m}'[Model the agent should use]:Choices:(gpt-5.5 gpt-5.4 gpt-5.4-mini gpt-5.3-codex gpt-5.3-codex-spark gpt-5.2 o3 o4-mini)' \
+            '(--oss)'--oss'[Use open-source provider]' \
+            '(--local-provider)'--local-provider'[Specify local OSS provider]:Choices:(lmstudio ollama)' \
+            '(--profile -p)'{--profile,-p}'[Configuration profile]:Python Completion:_list_profiles' \
+            '(--sandbox -s)'{--sandbox,-s}'[Sandbox policy]:Choices:(read-only workspace-write danger-full-access)' \
+            '(--dangerously-bypass-approvals-and-sandbox)'--dangerously-bypass-approvals-and-sandbox'[Skip approvals and sandboxing]' \
+            '(--cd -C)'{--cd,-C}'[Working root]:Directory:_files -/' \
+            '*--add-dir[Additional writable directory]:Directory:_files -/' \
+            '(--ask-for-approval -a)'{--ask-for-approval,-a}'[Approval policy]:Choices:(untrusted on-request on-failure never)' \
+            '(--search)'--search'[Enable live web search]' \
+            '(--no-alt-screen)'--no-alt-screen'[Disable alternate screen mode]' \
+            '(--remote)'--remote'[Remote app-server websocket endpoint]:URLs:_urls' \
+            '(--remote-auth-token-env)'--remote-auth-token-env'[Bearer token environment variable]:Environment variable:_parameters' \
+            '1:Python Completion:_list_sessions' \
+            '2:Default:_default'
+          ;;
+        cloud)
+          _codex_cloud
+          ;;
+        exec-server)
+          _arguments \
+            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
+            '*--enable[Enable a feature]:Python Completion:_list_features' \
+            '*--disable[Disable a feature]:Python Completion:_list_features' \
+            '(--help -h)'{--help,-h}'[Print help]' \
+            '(--listen)'--listen'[Transport endpoint URL]:Default:_default' \
+            '(--remote)'--remote'[Remote executor base URL]:URLs:_urls' \
+            '(--executor-id)'--executor-id'[Executor id]:Default:_default' \
+            '(--name)'--name'[Executor name]:Default:_default'
+          ;;
+        features)
+          _codex_features
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_codex
