@@ -1,0 +1,31 @@
+#compdef dedup
+compdef _dedup dedup
+zstyle ':completion:*:dedup:*' sort false
+
+_dedup() {
+  _arguments \
+    '(--help -h)'{--help,-h}'[Show help]' \
+    '*'{--exclude,-e}'[Exclude files matching glob by basename or relative path. Repeatable.]:glob pattern:_default' \
+    '*'{--include,-i}'[Only include files matching glob by basename or relative path. Repeatable.]:glob pattern:_default' \
+    '*--exclude-dir[Exclude directories whose name matches glob. Repeatable.]:glob pattern:_default' \
+    '(--exclude-dotfiles)'--exclude-dotfiles'[Skip dotfiles and dot-directories]' \
+    '(--follow-symlinks)'--follow-symlinks'[Follow symlinks while scanning]' \
+    '(--one-file-system)'--one-file-system'[Do not cross filesystem boundaries]' \
+    '(--min-size)'--min-size'[Skip files smaller than SIZE, e.g. 10M, 512K (default: 0)]:Size:(0 512K 1M 10M 100M 1G)' \
+    '(--algo)'--algo'[Hash algorithm used for candidate grouping (default: sha256)]:choices:(sha256 sha512 blake2b sha1 md5)' \
+    '(--chunk-size)'--chunk-size'[Read chunk size for hashing/comparison (default: 1M)]:Size:(64K 256K 1M 4M 16M)' \
+    '(--jobs -j)'{--jobs,-j}'[Hash files with N worker threads (default: 1)]:int:(1 2 4 8 16)' \
+    '(--keep)'--keep'[How to choose the file to keep inside a duplicate group]:choices:(shortest-path path mtime-oldest mtime-newest)' \
+    '*--prefer[Prefer keeping files under PATH. Repeatable; earlier paths win.]:Directory:_files -/' \
+    '(--dry-run)'--dry-run'[Only report]' \
+    '(--delete)'--delete'[Delete duplicate files]' \
+    '(--hardlink)'--hardlink'[Replace duplicate files with hardlinks to the keeper]' \
+    '(--symlink)'--symlink'[Replace duplicate files with relative symlinks to the keeper]' \
+    '(--trash)'--trash'[Move duplicate files into a timestamped folder under the user trash]' \
+    '(--quiet -q)'{--quiet,-q}'[Print only the summary]' \
+    '(--no-emoji)'--no-emoji'[Use plain text markers instead of emoji]' \
+    '(--progress)'--progress'[Show hashing progress on stderr]' \
+    '*:Files:_files'
+}
+
+_dedup

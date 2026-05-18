@@ -1,0 +1,844 @@
+#!/usr/bin/env python3
+"""
+dedup - Find and optionally deduplicate identical files under one or more paths.
+
+Default mode is a dry-run. Files are grouped by size, then by hash, and only
+treated as duplicates after a byte-for-byte comparison. Hash collisions, or
+files that changed during scanning, are reported and never deduplicated across
+different byte contents.
+
+Examples:
+    dedup ~/Downloads
+    dedup --algo sha512 --min-size 10M ~/Downloads
+    dedup --hardlink --prefer ~/Pictures/keepers ~/Pictures
+    dedup --trash --keep mtime-oldest ~/Downloads
+"""
+
+from __future__ import annotations
+
+import argparse
+import errno
+import hashlib
+import os
+import shutil
+import stat
+import sys
+import tempfile
+import threading
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from datetime import datetime
+from fnmatch import fnmatch
+from pathlib import Path
+from typing import Iterable
+
+try:
+    from loguru import logger
+
+    HAS_LOGURU = True
+except ModuleNotFoundError:
+    HAS_LOGURU = False
+
+    class _FallbackLogger:
+        def info(self, message: str = "") -> None:
+            sys.stdout.write(f"{message}\n")
+
+        def warning(self, message: str = "") -> None:
+            sys.stderr.write(f"{message}\n")
+
+        def error(self, message: str = "") -> None:
+            sys.stderr.write(f"{message}\n")
+
+    logger = _FallbackLogger()
+
+
+HASH_ALGOS = tuple(
+    algo
+    for algo in ("sha256", "sha512", "blake2b", "sha1", "md5")
+    if algo in hashlib.algorithms_available
+)
+DEFAULT_CHUNK_SIZE = 1024 * 1024
+SIZE_SUFFIXES = {
+    "b": 1,
+    "k": 1024,
+    "kb": 1024,
+    "m": 1024**2,
+    "mb": 1024**2,
+    "g": 1024**3,
+    "gb": 1024**3,
+    "t": 1024**4,
+    "tb": 1024**4,
+}
+
+
+@dataclass(frozen=True)
+class FileInfo:
+    path: Path
+    rel_path: Path
+    root: Path
+    size: int
+    mtime_ns: int
+    dev: int
+    ino: int
+
+    @property
+    def inode_key(self) -> tuple[int, int]:
+        return (self.dev, self.ino)
+
+
+@dataclass
+class DuplicateGroup:
+    keeper: FileInfo
+    members: list[FileInfo]
+
+    @property
+    def targets(self) -> list[FileInfo]:
+        keeper_inode = self.keeper.inode_key
+        return [f for f in self.members if f.path != self.keeper.path and f.inode_key != keeper_inode]
+
+    @property
+    def already_linked(self) -> list[FileInfo]:
+        keeper_inode = self.keeper.inode_key
+        return [f for f in self.members if f.path != self.keeper.path and f.inode_key == keeper_inode]
+
+    @property
+    def potential_reclaimable(self) -> int:
+        keeper_inode = self.keeper.inode_key
+        seen: set[tuple[int, int]] = set()
+        total = 0
+        for f in self.members:
+            if f.inode_key == keeper_inode or f.inode_key in seen:
+                continue
+            seen.add(f.inode_key)
+            total += f.size
+        return total
+
+
+@dataclass
+class ScanResult:
+    files: list[FileInfo]
+    errors: list[str]
+
+
+@dataclass
+class AnalyzeResult:
+    groups: list[DuplicateGroup]
+    errors: list[str]
+    collision_warnings: list[str]
+    hashed_files: int
+
+
+@dataclass
+class ActionResult:
+    changed: int = 0
+    skipped: int = 0
+    errors: list[str] | None = None
+
+    def __post_init__(self) -> None:
+        if self.errors is None:
+            self.errors = []
+
+
+def parse_size(value: str) -> int:
+    raw = value.strip().lower()
+    if not raw:
+        raise argparse.ArgumentTypeError("size cannot be empty")
+    number = raw
+    suffix = "b"
+    for i, char in enumerate(raw):
+        if not (char.isdigit() or char == "."):
+            number = raw[:i]
+            suffix = raw[i:]
+            break
+    if suffix not in SIZE_SUFFIXES:
+        raise argparse.ArgumentTypeError(f"unknown size suffix '{suffix}'")
+    try:
+        parsed = float(number)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"invalid size '{value}'") from exc
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("size must be >= 0")
+    return int(parsed * SIZE_SUFFIXES[suffix])
+
+
+def format_size(num_bytes: int) -> str:
+    value = float(num_bytes)
+    for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
+        if value < 1024 or unit == "TiB":
+            if unit == "B":
+                return f"{int(value)} {unit}"
+            return f"{value:.1f} {unit}"
+        value /= 1024
+    return f"{num_bytes} B"
+
+
+def absolute_path(path: Path) -> Path:
+    return Path(os.path.abspath(os.fspath(path.expanduser())))
+
+
+def configure_logger() -> None:
+    if not HAS_LOGURU:
+        return
+    logger.remove()
+    logger.add(
+        sys.stdout,
+        level="INFO",
+        format="{message}",
+        filter=lambda record: record["level"].no < 30,
+    )
+    logger.add(
+        sys.stderr,
+        level="WARNING",
+        format="{message}",
+        filter=lambda record: record["level"].no >= 30,
+    )
+
+
+def path_matches_any(rel_path: Path, patterns: Iterable[str]) -> bool:
+    name = rel_path.name
+    rel_str = str(rel_path)
+    return any(fnmatch(name, pat) or fnmatch(rel_str, pat) for pat in patterns)
+
+
+def should_include_file(rel_path: Path, args: argparse.Namespace) -> bool:
+    if args.exclude_dotfiles and any(part.startswith(".") for part in rel_path.parts):
+        return False
+    if path_matches_any(rel_path, args.exclude):
+        return False
+    if args.include and not path_matches_any(rel_path, args.include):
+        return False
+    return True
+
+
+def should_descend_dir(rel_path: Path, args: argparse.Namespace) -> bool:
+    if rel_path == Path("."):
+        return True
+    if args.exclude_dotfiles and any(part.startswith(".") for part in rel_path.parts):
+        return False
+    return not any(fnmatch(part, pat) for part in rel_path.parts for pat in args.exclude_dir)
+
+
+def add_file(
+    path: Path,
+    rel_path: Path,
+    root: Path,
+    args: argparse.Namespace,
+    files: list[FileInfo],
+    errors: list[str],
+    seen_paths: set[str],
+    root_dev: int | None = None,
+) -> None:
+    abs_key = os.path.abspath(os.fspath(path))
+    if abs_key in seen_paths:
+        return
+    seen_paths.add(abs_key)
+
+    try:
+        if path.is_symlink() and not args.follow_symlinks:
+            return
+        st = path.stat() if args.follow_symlinks else path.lstat()
+    except OSError as exc:
+        errors.append(f"{path}: stat failed: {exc}")
+        return
+
+    if args.one_file_system:
+        if root_dev is None:
+            try:
+                root_dev = root.stat().st_dev
+            except OSError as exc:
+                errors.append(f"{root}: stat failed: {exc}")
+                return
+        if st.st_dev != root_dev:
+            return
+    if not stat.S_ISREG(st.st_mode):
+        return
+    if st.st_size < args.min_size:
+        return
+    if not should_include_file(rel_path, args):
+        return
+
+    files.append(
+        FileInfo(
+            path=path,
+            rel_path=rel_path,
+            root=root,
+            size=st.st_size,
+            mtime_ns=st.st_mtime_ns,
+            dev=st.st_dev,
+            ino=st.st_ino,
+        )
+    )
+
+
+def collect_files(paths: list[Path], args: argparse.Namespace) -> ScanResult:
+    files: list[FileInfo] = []
+    errors: list[str] = []
+    seen_paths: set[str] = set()
+
+    for raw_path in paths:
+        path = absolute_path(raw_path)
+        try:
+            path_lstat = path.lstat()
+        except OSError as exc:
+            errors.append(f"{raw_path}: stat failed: {exc}")
+            continue
+
+        if stat.S_ISLNK(path_lstat.st_mode) and not args.follow_symlinks:
+            continue
+
+        try:
+            path_stat = path.stat() if args.follow_symlinks else path_lstat
+        except OSError as exc:
+            errors.append(f"{path}: stat failed: {exc}")
+            continue
+
+        if stat.S_ISREG(path_stat.st_mode):
+            add_file(path, Path(path.name), path.parent, args, files, errors, seen_paths)
+            continue
+        if not stat.S_ISDIR(path_stat.st_mode):
+            errors.append(f"{path}: not a file or directory")
+            continue
+
+        root = path
+        try:
+            root_dev = root.stat().st_dev
+        except OSError as exc:
+            errors.append(f"{root}: stat failed: {exc}")
+            continue
+
+        visited_dirs: set[tuple[int, int]] = set()
+        for dirpath, dirnames, filenames in os.walk(root, followlinks=args.follow_symlinks):
+            dir_path = Path(dirpath)
+            try:
+                rel_dir = dir_path.relative_to(root)
+            except ValueError:
+                rel_dir = Path(".")
+
+            if args.follow_symlinks:
+                try:
+                    dir_stat = dir_path.stat()
+                except OSError as exc:
+                    errors.append(f"{dir_path}: stat failed: {exc}")
+                    dirnames[:] = []
+                    continue
+                dir_key = (dir_stat.st_dev, dir_stat.st_ino)
+                if dir_key in visited_dirs:
+                    dirnames[:] = []
+                    continue
+                visited_dirs.add(dir_key)
+
+            kept_dirs = []
+            for dirname in dirnames:
+                child = dir_path / dirname
+                child_rel = rel_dir / dirname if rel_dir != Path(".") else Path(dirname)
+                if not should_descend_dir(child_rel, args):
+                    continue
+                if args.one_file_system:
+                    try:
+                        if child.stat().st_dev != root_dev:
+                            continue
+                    except OSError as exc:
+                        errors.append(f"{child}: stat failed: {exc}")
+                        continue
+                kept_dirs.append(dirname)
+            dirnames[:] = kept_dirs
+
+            for filename in filenames:
+                file_path = dir_path / filename
+                rel_file = rel_dir / filename if rel_dir != Path(".") else Path(filename)
+                add_file(file_path, rel_file, root, args, files, errors, seen_paths, root_dev)
+
+    return ScanResult(files=files, errors=errors)
+
+
+def hash_file(info: FileInfo, algo: str, chunk_size: int) -> str:
+    try:
+        current = info.path.stat()
+        if current.st_size != info.size:
+            raise OSError(errno.EAGAIN, "file size changed during scan")
+        h = hashlib.new(algo)
+        with info.path.open("rb") as stream:
+            for chunk in iter(lambda: stream.read(chunk_size), b""):
+                h.update(chunk)
+        after = info.path.stat()
+        if after.st_size != info.size:
+            raise OSError(errno.EAGAIN, "file size changed while hashing")
+    except OSError:
+        raise
+    return h.hexdigest()
+
+
+def files_equal(left: Path, right: Path, chunk_size: int) -> bool:
+    try:
+        if left.stat().st_size != right.stat().st_size:
+            return False
+        with left.open("rb") as lf, right.open("rb") as rf:
+            while True:
+                left_chunk = lf.read(chunk_size)
+                right_chunk = rf.read(chunk_size)
+                if left_chunk != right_chunk:
+                    return False
+                if not left_chunk:
+                    return True
+    except OSError:
+        raise
+
+
+def split_by_content(files: list[FileInfo], chunk_size: int) -> tuple[list[list[FileInfo]], list[str]]:
+    buckets: list[list[FileInfo]] = []
+    errors: list[str] = []
+
+    for info in sorted(files, key=lambda f: str(f.path)):
+        placed = False
+        for bucket in buckets:
+            try:
+                if files_equal(info.path, bucket[0].path, chunk_size):
+                    bucket.append(info)
+                    placed = True
+                    break
+            except OSError as exc:
+                errors.append(f"{info.path}: compare with {bucket[0].path} failed: {exc}")
+        if not placed:
+            buckets.append([info])
+
+    return buckets, errors
+
+
+def path_is_relative_to(path: Path, maybe_parent: Path) -> bool:
+    try:
+        path.relative_to(maybe_parent)
+        return True
+    except ValueError:
+        return False
+
+
+def preference_rank(info: FileInfo, preferred_paths: list[Path]) -> int:
+    if not preferred_paths:
+        return 0
+    for index, preferred in enumerate(preferred_paths):
+        if path_is_relative_to(info.path, preferred):
+            return index
+    return len(preferred_paths)
+
+
+def choose_keeper(files: list[FileInfo], args: argparse.Namespace) -> FileInfo:
+    preferred_paths = [absolute_path(Path(p)) for p in args.prefer]
+
+    def keep_key(info: FileInfo) -> tuple:
+        pref = preference_rank(info, preferred_paths)
+        path_str = str(info.path)
+        if args.keep == "mtime-oldest":
+            return (pref, info.mtime_ns, path_str)
+        if args.keep == "mtime-newest":
+            return (pref, -info.mtime_ns, path_str)
+        if args.keep == "path":
+            return (pref, path_str)
+        return (pref, len(path_str), path_str)
+
+    return min(files, key=keep_key)
+
+
+def analyze_duplicates(scan: ScanResult, args: argparse.Namespace) -> AnalyzeResult:
+    errors = list(scan.errors)
+    collision_warnings: list[str] = []
+    groups: list[DuplicateGroup] = []
+
+    by_size: dict[int, list[FileInfo]] = defaultdict(list)
+    for info in scan.files:
+        by_size[info.size].append(info)
+
+    hash_candidates = [info for same_size in by_size.values() if len(same_size) > 1 for info in same_size]
+    hash_results: dict[tuple[int, str], list[FileInfo]] = defaultdict(list)
+    hashed_files = 0
+
+    progress_lock = threading.Lock()
+    progress_done = 0
+    show_progress = args.progress and len(hash_candidates) > 0 and sys.stderr.isatty()
+
+    def record_progress() -> None:
+        nonlocal progress_done
+        if not show_progress:
+            return
+        with progress_lock:
+            progress_done += 1
+            sys.stderr.write(f"\rHashing: {progress_done}/{len(hash_candidates)}")
+            sys.stderr.flush()
+
+    def hash_one(info: FileInfo) -> tuple[FileInfo, str | None, str | None]:
+        try:
+            digest = hash_file(info, args.algo, args.chunk_size)
+            return info, digest, None
+        except OSError as exc:
+            return info, None, f"{info.path}: hash failed: {exc}"
+        finally:
+            record_progress()
+
+    if args.jobs > 1 and hash_candidates:
+        with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+            futures = [pool.submit(hash_one, info) for info in hash_candidates]
+            for future in as_completed(futures):
+                info, digest, error = future.result()
+                if error:
+                    errors.append(error)
+                    continue
+                assert digest is not None
+                hash_results[(info.size, digest)].append(info)
+                hashed_files += 1
+    else:
+        for info in hash_candidates:
+            info, digest, error = hash_one(info)
+            if error:
+                errors.append(error)
+                continue
+            assert digest is not None
+            hash_results[(info.size, digest)].append(info)
+            hashed_files += 1
+
+    if show_progress:
+        sys.stderr.write("\n")
+        sys.stderr.flush()
+
+    for (size, digest), same_hash in sorted(hash_results.items(), key=lambda item: (item[0][0], item[0][1])):
+        if len(same_hash) < 2:
+            continue
+        content_buckets, compare_errors = split_by_content(same_hash, args.chunk_size)
+        errors.extend(compare_errors)
+        if len(content_buckets) > 1:
+            collision_warnings.append(
+                f"hash collision or changed files: size={format_size(size)}, "
+                f"{args.algo}={digest}, byte-distinct groups={len(content_buckets)}"
+            )
+        for bucket in content_buckets:
+            if len(bucket) < 2:
+                continue
+            keeper = choose_keeper(bucket, args)
+            ordered = [keeper] + sorted((f for f in bucket if f.path != keeper.path), key=lambda f: str(f.path))
+            groups.append(DuplicateGroup(keeper=keeper, members=ordered))
+
+    groups.sort(key=lambda group: str(group.keeper.path))
+    return AnalyzeResult(
+        groups=groups,
+        errors=errors,
+        collision_warnings=collision_warnings,
+        hashed_files=hashed_files,
+    )
+
+
+def make_temp_path(parent: Path, target_name: str) -> Path:
+    fd, temp_name = tempfile.mkstemp(prefix=f".{target_name}.dedup-", dir=os.fspath(parent))
+    os.close(fd)
+    os.unlink(temp_name)
+    return Path(temp_name)
+
+
+def cleanup_temp(path: Path) -> None:
+    try:
+        if os.path.lexists(os.fspath(path)):
+            path.unlink()
+    except OSError:
+        pass
+
+
+def replace_with_hardlink(keeper: Path, target: Path) -> None:
+    temp_path = make_temp_path(target.parent, target.name)
+    try:
+        os.link(os.fspath(keeper), os.fspath(temp_path))
+        os.replace(os.fspath(temp_path), os.fspath(target))
+    except OSError:
+        cleanup_temp(temp_path)
+        raise
+
+
+def replace_with_symlink(keeper: Path, target: Path) -> None:
+    temp_path = make_temp_path(target.parent, target.name)
+    try:
+        rel_keeper = os.path.relpath(os.fspath(keeper), start=os.fspath(target.parent))
+        os.symlink(rel_keeper, os.fspath(temp_path))
+        os.replace(os.fspath(temp_path), os.fspath(target))
+    except OSError:
+        cleanup_temp(temp_path)
+        raise
+
+
+def unique_path(path: Path) -> Path:
+    if not os.path.lexists(os.fspath(path)):
+        return path
+    stem = path.name
+    for index in range(1, 10000):
+        candidate = path.with_name(f"{stem}.{index}")
+        if not os.path.lexists(os.fspath(candidate)):
+            return candidate
+    raise OSError(errno.EEXIST, "could not find a unique trash path", os.fspath(path))
+
+
+def build_trash_root() -> Path:
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    base = Path.home() / ".Trash"
+    if not base.exists():
+        base = Path.home() / ".local" / "share" / "Trash" / "files"
+    return base / f"dedup-{timestamp}"
+
+
+def move_to_trash(path: Path, trash_root: Path) -> Path:
+    abs_path = path.resolve()
+    if abs_path.is_absolute():
+        rel_parts = abs_path.parts[1:]
+    else:
+        rel_parts = abs_path.parts
+    destination = unique_path(trash_root.joinpath(*rel_parts))
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(os.fspath(path), os.fspath(destination))
+    return destination
+
+
+def same_inode(left: Path, right: Path) -> bool:
+    try:
+        left_stat = left.stat()
+        right_stat = right.stat()
+    except OSError:
+        return False
+    return (left_stat.st_dev, left_stat.st_ino) == (right_stat.st_dev, right_stat.st_ino)
+
+
+def verify_duplicate(keeper: Path, target: Path, chunk_size: int) -> None:
+    if same_inode(keeper, target):
+        return
+    if not files_equal(keeper, target, chunk_size):
+        raise OSError(errno.EAGAIN, "file no longer matches keeper")
+
+
+def apply_actions(groups: list[DuplicateGroup], args: argparse.Namespace) -> ActionResult:
+    result = ActionResult()
+    if args.action == "dry-run":
+        return result
+
+    trash_root = build_trash_root() if args.action == "trash" else None
+
+    for group in groups:
+        for target in group.targets:
+            try:
+                verify_duplicate(group.keeper.path, target.path, args.chunk_size)
+                if args.action == "delete":
+                    target.path.unlink()
+                elif args.action == "hardlink":
+                    replace_with_hardlink(group.keeper.path, target.path)
+                elif args.action == "symlink":
+                    replace_with_symlink(group.keeper.path, target.path)
+                elif args.action == "trash":
+                    assert trash_root is not None
+                    move_to_trash(target.path, trash_root)
+                else:
+                    raise ValueError(f"unknown action: {args.action}")
+                result.changed += 1
+            except OSError as exc:
+                result.errors.append(f"{target.path}: {args.action} failed: {exc}")
+                result.skipped += 1
+
+        result.skipped += len(group.already_linked)
+
+    return result
+
+
+def print_report(scan: ScanResult, analysis: AnalyzeResult, action: ActionResult, args: argparse.Namespace) -> None:
+    duplicate_files = sum(max(0, len(group.members) - 1) for group in analysis.groups)
+    actionable_files = sum(len(group.targets) for group in analysis.groups)
+    reclaimable = sum(group.potential_reclaimable for group in analysis.groups)
+    keep_marker = "[KEEP]" if args.no_emoji else "✅"
+    dup_marker = "[DUP]" if args.no_emoji else "❌"
+    linked_marker = "[LINK]" if args.no_emoji else "🔗"
+    warning_marker = "[WARN]" if args.no_emoji else "⚠️"
+    error_marker = "[ERR]" if args.no_emoji else "❌"
+    summary_marker = "[SUM]" if args.no_emoji else "📊"
+    dry_run_marker = "[DRY]" if args.no_emoji else "🧪"
+    changed_marker = "[DONE]" if args.no_emoji else "✅"
+
+    if not args.quiet:
+        roots = ", ".join(str(absolute_path(p)) for p in args.paths)
+        logger.info(f"Paths: {roots}")
+        logger.info(f"Action: {args.action}")
+        logger.info(f"Algorithm: {args.algo}")
+        logger.info("")
+
+        if analysis.groups:
+            for index, group in enumerate(analysis.groups, start=1):
+                logger.info(
+                    f"Duplicate group {index}: {len(group.members)} files, "
+                    f"{format_size(group.keeper.size)} each"
+                )
+                logger.info(f"{keep_marker} keep       {group.keeper.path}")
+                for info in group.members:
+                    if info.path == group.keeper.path:
+                        continue
+                    if info.inode_key == group.keeper.inode_key:
+                        logger.info(f"{linked_marker} same-inode {info.path}")
+                    else:
+                        logger.info(f"{dup_marker} dup        {info.path}")
+                logger.info("")
+        else:
+            logger.info("No duplicate files found.")
+            logger.info("")
+
+        for warning in analysis.collision_warnings:
+            logger.warning(f"{warning_marker} Warning: {warning}")
+        for error in analysis.errors:
+            logger.error(f"{error_marker} Error: {error}")
+        if action.errors:
+            for error in action.errors:
+                logger.error(f"{error_marker} Error: {error}")
+
+    logger.info(
+        f"{summary_marker} Summary: "
+        f"{len(scan.files)} files scanned, "
+        f"{analysis.hashed_files} files hashed, "
+        f"{len(analysis.groups)} duplicate groups, "
+        f"{duplicate_files} duplicate paths, "
+        f"{actionable_files} actionable paths, "
+        f"{format_size(reclaimable)} potential reclaimable, "
+        f"{len(analysis.collision_warnings)} collision warnings, "
+        f"{len(analysis.errors) + len(action.errors or [])} errors"
+    )
+
+    if args.action == "dry-run" and analysis.groups and not args.quiet:
+        logger.info(f"{dry_run_marker} Dry run: no files changed. Use --delete, --hardlink, --symlink, or --trash to apply.")
+    elif args.action != "dry-run":
+        logger.info(f"{changed_marker} Changed: {action.changed}, skipped: {action.skipped}")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="dedup",
+        description="Find and optionally deduplicate identical files safely",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("paths", nargs="+", type=Path, help="File or directory paths to scan")
+
+    filters = parser.add_argument_group("filters")
+    filters.add_argument(
+        "-e",
+        "--exclude",
+        action="append",
+        default=[],
+        metavar="PATTERN",
+        help="Exclude files matching glob by basename or relative path. Repeatable.",
+    )
+    filters.add_argument(
+        "-i",
+        "--include",
+        action="append",
+        default=[],
+        metavar="PATTERN",
+        help="Only include files matching glob by basename or relative path. Repeatable.",
+    )
+    filters.add_argument(
+        "--exclude-dir",
+        action="append",
+        default=[],
+        metavar="PATTERN",
+        help="Exclude directories whose name matches glob. Repeatable.",
+    )
+    filters.add_argument("--exclude-dotfiles", action="store_true", help="Skip dotfiles and dot-directories")
+    filters.add_argument("--follow-symlinks", action="store_true", help="Follow symlinks while scanning")
+    filters.add_argument("--one-file-system", action="store_true", help="Do not cross filesystem boundaries")
+    filters.add_argument(
+        "--min-size",
+        type=parse_size,
+        default=0,
+        metavar="SIZE",
+        help="Skip files smaller than SIZE, e.g. 10M, 512K (default: 0)",
+    )
+
+    comparison = parser.add_argument_group("comparison")
+    comparison.add_argument(
+        "--algo",
+        choices=HASH_ALGOS,
+        default="sha256",
+        help="Hash algorithm used for candidate grouping (default: sha256)",
+    )
+    comparison.add_argument(
+        "--chunk-size",
+        type=parse_size,
+        default=DEFAULT_CHUNK_SIZE,
+        metavar="SIZE",
+        help="Read chunk size for hashing/comparison (default: 1M)",
+    )
+    comparison.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        default=1,
+        metavar="N",
+        help="Hash files with N worker threads (default: 1)",
+    )
+
+    keeping = parser.add_argument_group("keeper selection")
+    keeping.add_argument(
+        "--keep",
+        choices=("shortest-path", "path", "mtime-oldest", "mtime-newest"),
+        default="shortest-path",
+        help="How to choose the file to keep inside a duplicate group",
+    )
+    keeping.add_argument(
+        "--prefer",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="Prefer keeping files under PATH. Repeatable; earlier paths win.",
+    )
+
+    actions = parser.add_argument_group("actions")
+    action_group = actions.add_mutually_exclusive_group()
+    action_group.add_argument("--dry-run", dest="action", action="store_const", const="dry-run", help="Only report")
+    action_group.add_argument("--delete", dest="action", action="store_const", const="delete", help="Delete duplicate files")
+    action_group.add_argument(
+        "--hardlink",
+        dest="action",
+        action="store_const",
+        const="hardlink",
+        help="Replace duplicate files with hardlinks to the keeper",
+    )
+    action_group.add_argument(
+        "--symlink",
+        dest="action",
+        action="store_const",
+        const="symlink",
+        help="Replace duplicate files with relative symlinks to the keeper",
+    )
+    action_group.add_argument(
+        "--trash",
+        dest="action",
+        action="store_const",
+        const="trash",
+        help="Move duplicate files into a timestamped folder under the user trash",
+    )
+    parser.set_defaults(action="dry-run")
+
+    output = parser.add_argument_group("output")
+    output.add_argument("-q", "--quiet", action="store_true", help="Print only the summary")
+    output.add_argument("--no-emoji", action="store_true", help="Use plain text markers instead of emoji")
+    output.add_argument("--progress", action="store_true", help="Show hashing progress on stderr")
+
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
+    args = parser.parse_args()
+    configure_logger()
+
+    if args.jobs < 1:
+        parser.error("--jobs must be >= 1")
+    if args.chunk_size < 1:
+        parser.error("--chunk-size must be >= 1")
+
+    scan = collect_files(args.paths, args)
+    analysis = analyze_duplicates(scan, args)
+    action = apply_actions(analysis.groups, args)
+    print_report(scan, analysis, action, args)
+
+    if analysis.errors or action.errors:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

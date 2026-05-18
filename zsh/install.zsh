@@ -193,6 +193,7 @@ update_conf()
     mkdir -p "$HOME/.zsh" "$HOME/.zsh/Completion"
     cp -r zsh/. "$HOME/.zsh/"
     cp py_completions/_* "$HOME/.zsh/Completion/" 2>/dev/null
+    find py_completions -mindepth 2 -maxdepth 2 -type f -name "_*" -exec cp {} "$HOME/.zsh/Completion/" \;
 
     if ! [ -f "$HOME/.zsh.local" ]; then
         echo "update zsh.local, for local usage"
