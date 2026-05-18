@@ -501,7 +501,6 @@ def make_codex_command() -> Command:
 
     cmd.add_sub_commands([
         make_exec_command(),
-        make_exec_command("e"),
         make_review_command(),
         make_login_command(),
         logout,

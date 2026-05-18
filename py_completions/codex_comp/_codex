@@ -259,7 +259,6 @@ _codex_subcommands() {
   local -a subcmds
   subcmds=(
     "exec:Run Codex non-interactively"
-    "e:Run Codex non-interactively"
     "review:Run a code review non-interactively"
     "login:Manage login"
     "logout:Remove stored authentication credentials"
@@ -892,81 +891,6 @@ _codex_login() {
 }
 
 
-_codex_e_subcommands() {
-  local -a subcmds
-  subcmds=(
-    "resume:Resume a previous non-interactive session"
-    "review:Run a code review against the current repository"
-  )
-  _describe -t subcommands 'subcommands' subcmds
-}
-
-
-_codex_e() {
-  local state
-
-  _arguments -C \
-    '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
-    '*--enable[Enable a feature]:Python Completion:_list_features' \
-    '*--disable[Disable a feature]:Python Completion:_list_features' \
-    '(--help -h)'{--help,-h}'[Print help]' \
-    '(--version -V)'{--version,-V}'[Print version]' \
-    '*'{--image,-i}'[Attach image to the initial prompt]:Files:_files' \
-    '(--model -m)'{--model,-m}'[Model the agent should use]:Choices:(gpt-5.5 gpt-5.4 gpt-5.4-mini gpt-5.3-codex gpt-5.3-codex-spark gpt-5.2 o3 o4-mini)' \
-    '(--oss)'--oss'[Use open-source provider]' \
-    '(--local-provider)'--local-provider'[Specify local OSS provider]:Choices:(lmstudio ollama)' \
-    '(--profile -p)'{--profile,-p}'[Configuration profile]:Python Completion:_list_profiles' \
-    '(--sandbox -s)'{--sandbox,-s}'[Sandbox policy]:Choices:(read-only workspace-write danger-full-access)' \
-    '(--dangerously-bypass-approvals-and-sandbox)'--dangerously-bypass-approvals-and-sandbox'[Skip approvals and sandboxing]' \
-    '(--cd -C)'{--cd,-C}'[Working root]:Directory:_files -/' \
-    '*--add-dir[Additional writable directory]:Directory:_files -/' \
-    '(--ask-for-approval -a)'{--ask-for-approval,-a}'[Approval policy]:Choices:(untrusted on-request on-failure never)' \
-    '(--search)'--search'[Enable live web search]' \
-    '(--no-alt-screen)'--no-alt-screen'[Disable alternate screen mode]' \
-    '(--remote)'--remote'[Remote app-server websocket endpoint]:URLs:_urls' \
-    '(--remote-auth-token-env)'--remote-auth-token-env'[Bearer token environment variable]:Environment variable:_parameters' \
-    '(--skip-git-repo-check)'--skip-git-repo-check'[Allow running outside a Git repository]' \
-    '(--ephemeral)'--ephemeral'[Run without persisting session files]' \
-    '(--ignore-user-config)'--ignore-user-config'[Do not load user config.toml]' \
-    '(--ignore-rules)'--ignore-rules'[Do not load execpolicy rules]' \
-    '(--output-schema)'--output-schema'[Path to JSON Schema output file]:Files:_files' \
-    '(--color)'--color'[Output color setting]:Choices:(always never auto)' \
-    '(--json)'--json'[Print events as JSONL]' \
-    '(--output-last-message -o)'{--output-last-message,-o}'[File for last agent message]:Files:_files' \
-    '1: :->cmds' \
-    '*:: :->args'
-
-  case $state in
-    cmds)
-      _codex_e_subcommands
-      ;;
-
-    args)
-      case $words[1] in
-        resume)
-          _arguments \
-            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
-            '*--enable[Enable a feature]:Python Completion:_list_features' \
-            '*--disable[Disable a feature]:Python Completion:_list_features' \
-            '(--help -h)'{--help,-h}'[Print help]' \
-            '(--last)'--last'[Resume the most recent session]' \
-            '1:Python Completion:_list_sessions'
-          ;;
-        review)
-          _arguments \
-            '*'{--config,-c}'[Override a configuration value from config.toml]:Default:_default' \
-            '*--enable[Enable a feature]:Python Completion:_list_features' \
-            '*--disable[Disable a feature]:Python Completion:_list_features' \
-            '(--help -h)'{--help,-h}'[Print help]' \
-            '1:Default:_default'
-          ;;
-
-      esac
-      ;;
-  esac
-}
-
-
 _codex_exec_subcommands() {
   local -a subcmds
   subcmds=(
@@ -1077,9 +1001,6 @@ _codex() {
       case $words[1] in
         exec)
           _codex_exec
-          ;;
-        e)
-          _codex_e
           ;;
         review)
           _arguments \
