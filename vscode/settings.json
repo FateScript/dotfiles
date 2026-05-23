@@ -1,4 +1,5 @@
 {
+    "window.confirmBeforeClose": "always",
     // terminal settings
     "terminal.integrated.enableImages": true,
     "terminal.integrated.copyOnSelection": true,

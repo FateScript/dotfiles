@@ -2,7 +2,7 @@
 
 function safe_source() { [ -f  "$1" ] && source "$1" }
 # function safe_export_path() { [[ -d $1 ]] && export PATH=$1:$PATH }
-function safe_add_fpath() { [[ -d "$1" ]] && fpath=("$1" $fpath) }  # NOTE: don't quote fpath here
+function safe_add_fpath() { [[ -d "$1" ]] && fpath=("$1" ${fpath:#$1}) }  # NOTE: don't quote fpath here
 function safe_export_path() {
     if [[ -d "$1" ]]; then
         if [[ ":$PATH:" == *":$1:"* ]]; then
@@ -57,14 +57,12 @@ plugins=(
 
 # alias and self defined function
 safe_export_path $HOME/.local/bin >/dev/null
+safe_add_fpath "$HOME/.zsh/Completion"  # import for custom completion like codex (might be overridden)
 safe_source $ZSH/oh-my-zsh.sh
 
 for file in $HOME/.zsh/*.zsh; do
     source $file
 done
-
-safe_add_fpath "$HOME/.zsh/Completion"
-safe_add_fpath "$HOME/.zsh/functions"
 
 safe_source "$HOME"/.fzf.zsh
 safe_source "$HOME"/.zsh.env    # local file is used to store local env
