@@ -58,6 +58,7 @@ plugins=(
 # alias and self defined function
 safe_export_path $HOME/.local/bin >/dev/null
 safe_add_fpath "$HOME/.zsh/Completion"  # import for custom completion like codex (might be overridden)
+safe_add_fpath "$HOME/.zsh/functions"
 safe_source $ZSH/oh-my-zsh.sh
 
 for file in $HOME/.zsh/*.zsh; do
