@@ -208,3 +208,190 @@ git_rebase_n() {
     shift
     git rebase -i "HEAD~$count" "$@"
 }
+
+git_rm_worktree() {
+    local dry_run=0
+    local force=0
+    local remove_all=0
+    local delete_branch=0
+
+    while (( $# > 0 )); do
+        case "$1" in
+            -n|--dry-run)
+                dry_run=1
+                ;;
+            -f|--force)
+                force=1
+                ;;
+            -a|--all)
+                remove_all=1
+                ;;
+            --delete-branch)
+                delete_branch=1
+                ;;
+            -h|--help)
+                echo "Usage: git_rm_worktree [--dry-run] [--force] [--all] [--delete-branch] <commit|branch>"
+                return 0
+                ;;
+            --)
+                shift
+                break
+                ;;
+            -*)
+                echo "Error: unknown option: $1" >&2
+                return 2
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift
+    done
+
+    if (( $# != 1 )); then
+        echo "Usage: git_rm_worktree [--dry-run] [--force] [--all] [--delete-branch] <commit|branch>" >&2
+        return 2
+    fi
+
+    local target="$1"
+    local repo_root
+    repo_root=$(git rev-parse --show-toplevel) || return 1
+
+    local match_mode="commit"
+    local target_branch=""
+    local target_ref=""
+    local target_commit=""
+
+    if git show-ref --verify --quiet "refs/heads/$target"; then
+        match_mode="branch"
+        target_branch="$target"
+        target_ref="refs/heads/$target"
+        target_commit=$(git rev-parse --verify "$target_ref^{commit}") || return 1
+    elif [[ "$target" == refs/heads/* ]] && git show-ref --verify --quiet "$target"; then
+        match_mode="branch"
+        target_branch="${target#refs/heads/}"
+        target_ref="$target"
+        target_commit=$(git rev-parse --verify "$target_ref^{commit}") || return 1
+    else
+        target_commit=$(git rev-parse --verify "$target^{commit}") || {
+            echo "Error: not a valid commit or local branch: $target" >&2
+            return 1
+        }
+    fi
+
+    local -a paths
+    local -a branches
+    local wt_path head branch_ref
+
+    while IFS=$'\t' read -r wt_path head branch_ref; do
+        [[ -z "$wt_path" ]] && continue
+        paths+=("$wt_path")
+        branches+=("${branch_ref#refs/heads/}")
+    done < <(
+        git worktree list --porcelain | awk \
+            -v mode="$match_mode" \
+            -v target_commit="$target_commit" \
+            -v target_ref="$target_ref" '
+            function flush() {
+                if (path == "") {
+                    return
+                }
+                if ((mode == "branch" && branch == target_ref) ||
+                    (mode == "commit" && head == target_commit)) {
+                    print path "\t" head "\t" branch
+                }
+            }
+            /^worktree / {
+                flush()
+                path = substr($0, 10)
+                head = ""
+                branch = ""
+                next
+            }
+            /^HEAD / {
+                head = substr($0, 6)
+                next
+            }
+            /^branch / {
+                branch = substr($0, 8)
+                next
+            }
+            END {
+                flush()
+            }
+        '
+    )
+
+    if (( $#paths == 0 )); then
+        if [[ "$match_mode" == "branch" ]]; then
+            echo "Error: no worktree is checking out branch $target_branch" >&2
+        else
+            echo "Error: no worktree has HEAD $target_commit" >&2
+        fi
+        return 1
+    fi
+
+    if (( $#paths > 1 && remove_all == 0 )); then
+        echo "Found multiple matching worktrees:" >&2
+        for wt_path in "${paths[@]}"; do
+            echo "  $wt_path" >&2
+        done
+        echo "Rerun with --all if you want to remove all of them." >&2
+        return 1
+    fi
+
+    local repo_physical
+    repo_physical=$(cd "$repo_root" && pwd -P)
+
+    local i wt_path_physical branch dirty_status branch_commit
+    for (( i = 1; i <= $#paths; i++ )); do
+        wt_path="${paths[$i]}"
+        branch="${branches[$i]}"
+        wt_path_physical=$(cd "$wt_path" 2>/dev/null && pwd -P)
+
+        if [[ -n "$wt_path_physical" && "$wt_path_physical" == "$repo_physical" ]]; then
+            echo "Error: refusing to remove the main worktree: $wt_path" >&2
+            return 1
+        fi
+
+        if (( dry_run )); then
+            dirty_status=$(git -C "$wt_path" status --porcelain=v1 --untracked-files=normal 2>/dev/null)
+            [[ -n "$dirty_status" ]] && echo "warning: worktree has local changes: $wt_path" >&2
+            if (( force )); then
+                echo "would run: git -C \"$repo_root\" worktree remove --force \"$wt_path\""
+            else
+                echo "would run: git -C \"$repo_root\" worktree remove \"$wt_path\""
+            fi
+        else
+            if (( force == 0 )); then
+                git -C "$wt_path" diff --quiet --ignore-submodules -- \
+                    || { echo "Error: worktree has unstaged changes: $wt_path; rerun with --force to remove anyway" >&2; return 1; }
+                git -C "$wt_path" diff --cached --quiet --ignore-submodules -- \
+                    || { echo "Error: worktree has staged changes: $wt_path; rerun with --force to remove anyway" >&2; return 1; }
+                dirty_status=$(git -C "$wt_path" ls-files --others --exclude-standard)
+                [[ -z "$dirty_status" ]] \
+                    || { echo "Error: worktree has untracked files: $wt_path; rerun with --force to remove anyway" >&2; return 1; }
+                git -C "$repo_root" worktree remove "$wt_path"
+            else
+                git -C "$repo_root" worktree remove --force "$wt_path"
+            fi
+        fi
+
+        if (( delete_branch )); then
+            if [[ -z "$branch" ]]; then
+                echo "warning: no local branch checked out in $wt_path" >&2
+                continue
+            fi
+            branch_commit=$(git -C "$repo_root" rev-parse --verify "refs/heads/$branch^{commit}") || return 1
+            if [[ "$branch_commit" != "$target_commit" ]]; then
+                echo "Error: refusing to delete branch $branch: it moved to $branch_commit" >&2
+                return 1
+            fi
+            if (( dry_run )); then
+                echo "would run: git -C \"$repo_root\" branch -D \"$branch\""
+            else
+                git -C "$repo_root" branch -D "$branch"
+            fi
+        fi
+    done
+}
