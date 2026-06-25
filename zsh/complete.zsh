@@ -31,7 +31,12 @@ __user_complete(){
     fi
     # try to use fzf-tab and fzf if available
     if [[ -n ${+functions[fzf-tab-complete]} ]] && command -v fzf >/dev/null; then
+        local before_buffer=$BUFFER before_cursor=$CURSOR complete_ret
         zle fzf-tab-complete
+        complete_ret=$?
+        if (( complete_ret != 0 )) && [[ $BUFFER == "$before_buffer" && $CURSOR == $before_cursor ]]; then
+            zle expand-or-complete
+        fi
     else  # fallback to normal
         zle expand-or-complete
     fi
