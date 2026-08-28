@@ -354,7 +354,10 @@ rgopen()
     fi
 }
 
-_conf() { _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal zshenv conda ssh his py pip git rclone)' }
+_conf() {
+    _arguments '1: :(xmonad tmux vim nvim zsh zshbase zshal zshins zshlocal zshenv conda
+    ssh his py pip git rclone bash codex kimi claude htop)'
+}
 
 conf()
 {
@@ -376,6 +379,11 @@ conf()
         pip)        vim $HOME/.config/pip/pip.conf;;
         git)        vim $HOME/.gitconfig;;
         rclone)     vim $HOME/.config/rclone/rclone.conf;;
+        bash)       vim $HOME/.bashrc;;
+        codex)      vim $HOME/.codex/config.toml;;
+        kimi)       vim $HOME/.kimi-code/config.toml;;
+        claude)     vim $HOME/.claude/settings.json;;
+        htop)       vim $HOME/.config/htop/htoprc;;
         *)		echo "Unknown application $1" ;;
 	esac
 }
