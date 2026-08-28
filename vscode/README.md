@@ -5,6 +5,10 @@ Steps to use provided settings.json
 * Type “Settings.json” in the search bar and select the specific settings.json file
 * Copy and paste the settings.json file into the user settings file
 
+The terminal panel background is provided by `shalldie.background`. The image is
+referenced from the HTTPS release URL in `settings.json`, so no local image copy
+is required for VS Code.
+
 #### Theme
 - [gruvbox](https://marketplace.visualstudio.com/items?itemName=jdinhlife.gruvbox)
 

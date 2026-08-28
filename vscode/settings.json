@@ -3,6 +3,16 @@
     // terminal settings
     "terminal.integrated.enableImages": true,
     "terminal.integrated.copyOnSelection": true,
+    // terminal panel background (provided by shalldie.background)
+    "background.enabled": true,
+    "background.panel": {
+      "images": ["https://github.com/FateScript/dotfiles/releases/download/0.0.1/qifantian.png"],
+      "opacity": 0.18,
+      "size": "cover",
+      "position": "center",
+      "interval": 0,
+      "random": false
+    },
     // "terminal.integrated.rightClickBehavior": "copyPaste",
     "editor.fontSize": 14,
     "workbench.colorTheme": "Gruvbox Dark Hard",

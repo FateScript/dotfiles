@@ -255,6 +255,65 @@ softlinks() {
     done
 }
 
+iterm_bg() {
+    emulate -L zsh
+
+    if (( $# != 1 )); then
+        print -u2 'Usage: iterm_bg <local-image-path>'
+        return 2
+    fi
+
+    local image_path="$1"
+
+    # Support ~, relative paths, spaces, and absolute paths.
+    case "$image_path" in
+        '~')
+            image_path="$HOME"
+            ;;
+        '~/'*)
+            image_path="$HOME/${image_path#\~/}"
+            ;;
+    esac
+    image_path="${image_path:A}"
+
+    if [[ ! -f "$image_path" ]]; then
+        print -u2 -- "iterm_bg: file does not exist: $image_path"
+        return 1
+    fi
+
+    if [[ ! -r "$image_path" ]]; then
+        print -u2 -- "iterm_bg: file is not readable: $image_path"
+        return 1
+    fi
+
+    osascript - "$image_path" <<'APPLESCRIPT'
+on run argv
+    tell application "iTerm2"
+        if (count of windows) is 0 then error "iTerm2 has no open windows"
+        set background image of current session of current window to (item 1 of argv)
+    end tell
+end run
+APPLESCRIPT
+}
+
+iterm_bg_off() {
+    emulate -L zsh
+
+    if (( $# != 0 )); then
+        print -u2 'Usage: iterm_bg_off'
+        return 2
+    fi
+
+    osascript <<'APPLESCRIPT'
+on run
+    tell application "iTerm2"
+        if (count of windows) is 0 then error "iTerm2 has no open windows"
+        set background image of current session of current window to ""
+    end tell
+end run
+APPLESCRIPT
+}
+
 
 search_funcs() {
     # search functions whose value contains search string
