@@ -1,0 +1,605 @@
+#compdef kimi
+compdef _kimi kimi
+zstyle ':completion:*:kimi:*' sort false
+
+__list_agents() {
+  python3 -c \
+'def list_agents():
+    from pathlib import Path
+
+    seen = set()
+    for name, desc in (
+        ("coder", "Builtin: general software engineering agent"),
+        ("explore", "Builtin: fast read-only codebase exploration"),
+        ("plan", "Builtin: read-only implementation planning"),
+    ):
+        seen.add(name)
+        print(f"{name} {desc}")
+
+    roots = [
+        Path("~/.kimi-code/agents").expanduser(),
+        Path("~/.agents/agents").expanduser(),
+    ]
+    cwd = Path.cwd()
+    for parent in (cwd, *cwd.parents):
+        if (parent / ".git").exists():
+            roots.append(parent / ".kimi-code" / "agents")
+            roots.append(parent / ".agents" / "agents")
+            break
+
+    for root in roots:
+        try:
+            files = sorted(root.rglob("*.md"))
+        except Exception:
+            continue
+        for f in files:
+            name, desc = f.stem, ""
+            try:
+                text = f.read_text(errors="ignore")
+            except Exception:
+                continue
+            if text.startswith("---"):
+                for line in text.splitlines()[1:30]:
+                    stripped = line.strip()
+                    if stripped == "---":
+                        break
+                    if stripped.startswith("name:"):
+                        name = stripped.split(":", 1)[1].strip().strip("\"'"'"'")
+                    elif stripped.startswith("description:"):
+                        desc = stripped.split(":", 1)[1].strip().strip("\"'"'"'")
+            if not name or name in seen:
+                continue
+            seen.add(name)
+            desc = desc.split("\n")[0].replace(":", "\\:")[:80]
+            print(f"{name} {desc}" if desc else name)
+
+list_agents()'
+} 2>/dev/null
+
+_list_agents() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(__list_agents)
+  _describe -t choices 'choices' choices
+}
+
+__list_models() {
+  python3 -c \
+'def list_models():
+    import tomllib
+    from pathlib import Path
+
+    try:
+        with Path("~/.kimi-code/config.toml").expanduser().open("rb") as f:
+            data = tomllib.load(f)
+    except Exception:
+        return
+
+    for alias, info in data.get("models", {}).items():
+        name = info.get("display_name", "") if isinstance(info, dict) else ""
+        name = name.split("\n")[0].replace(":", "\\:")
+        print(f"{alias} {name}" if name else alias)
+
+list_models()'
+} 2>/dev/null
+
+_list_models() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(__list_models)
+  _describe -t choices 'choices' choices
+}
+
+__list_providers() {
+  python3 -c \
+'def list_providers():
+    import tomllib
+    from pathlib import Path
+
+    try:
+        with Path("~/.kimi-code/config.toml").expanduser().open("rb") as f:
+            data = tomllib.load(f)
+    except Exception:
+        return
+
+    for pid in data.get("providers", {}):
+        print(pid.replace(":", "\\:"))
+
+list_providers()'
+} 2>/dev/null
+
+_list_providers() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(__list_providers)
+  _describe -t choices 'choices' choices
+}
+
+__list_sessions() {
+  python3 -c \
+'def list_sessions():
+    import json
+    from pathlib import Path
+
+    try:
+        index = Path("~/.kimi-code/session_index.jsonl").expanduser()
+        lines = index.read_text().splitlines()
+    except Exception:
+        return
+
+    home = str(Path.home())
+    seen = set()
+    count = 0
+    for line in reversed(lines):  # most recent first
+        if count >= 100:
+            break
+        try:
+            rec = json.loads(line)
+        except Exception:
+            continue
+        sid = rec.get("sessionId")
+        if not sid or sid in seen:
+            continue
+        seen.add(sid)
+        count += 1
+
+        work_dir = rec.get("workDir", "")
+        if work_dir.startswith(home):
+            work_dir = "~" + work_dir[len(home) :]
+
+        prompt = ""
+        session_dir = rec.get("sessionDir")
+        if session_dir:
+            try:
+                state = json.loads((Path(session_dir) / "state.json").read_text())
+                prompt = state.get("lastPrompt", "") or ""
+            except Exception:
+                pass
+        prompt = " ".join(prompt.split())[:60]
+
+        desc = f"{work_dir}  {prompt}".strip()
+        desc = desc.split("\n")[0].replace(":", "\\:")
+        print(f"{sid} {desc}" if desc else sid)
+
+list_sessions()'
+} 2>/dev/null
+
+_list_sessions() {
+  local -a choices
+  local line opt msg
+
+  while IFS= read -r line; do
+    opt="${line%% *}"
+    msg="${line#* }"
+    choices+=("$opt:$msg")
+  done < <(__list_sessions)
+  _describe -t choices 'choices' choices
+}
+
+
+_kimi_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "export:Export a session as a ZIP archive"
+    "fork:Fork a session into a new session"
+    "provider:Manage LLM providers non-interactively"
+    "session:Manage sessions non-interactively"
+    "acp:Run as an ACP server over stdio"
+    "web:Run the local Kimi server and open the web UI"
+    "rc:Run the Kimi server and open the web UI through Remote Control"
+    "remote:Alias of rc"
+    "server:Deprecated; use kimi web instead"
+    "vis:Launch the session visualizer in your browser"
+    "login:Authenticate via the device-code flow"
+    "doctor:Validate Kimi Code configuration files"
+    "migrate:Migrate data from legacy kimi-cli"
+    "upgrade:Upgrade Kimi Code to the latest version"
+    "update:Alias of upgrade"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_kimi_doctor_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "config:Validate config.toml"
+    "tui:Validate tui.toml"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_kimi_doctor() {
+  local state
+
+  _arguments -C \
+    '(--help -h)'{--help,-h}'[Show help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _kimi_doctor_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        config)
+          _arguments \
+            '(--help -h)'{--help,-h}'[Show help]' \
+            '1:Files:_files'
+          ;;
+        tui)
+          _arguments \
+            '(--help -h)'{--help,-h}'[Show help]' \
+            '1:Files:_files'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_kimi_server_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "kill:Stop a background server started by a version before 0.28.0"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_kimi_server() {
+  local state
+
+  _arguments -C \
+    '(--help -h)'{--help,-h}'[Show help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _kimi_server_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        kill)
+          _arguments \
+            '(--help -h)'{--help,-h}'[Show help]'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_kimi_web_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "rotate-token:Generate a new persistent server token"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_kimi_web() {
+  local state
+
+  _arguments -C \
+    '(--port)'--port'[Bind port (default 58627)]:port:_default' \
+    '(--host)'--host'[Bind host (optional value)]:Choices:(127.0.0.1 0.0.0.0 localhost)' \
+    '*--allowed-host[Extra allowed Host header]:host:_default' \
+    '(--insecure-no-tls)'--insecure-no-tls'[Allow non-loopback bind without TLS proxy]' \
+    '(--allow-remote-shutdown)'--allow-remote-shutdown'[Keep remote shutdown route enabled]' \
+    '(--dangerous-bypass-auth)'--dangerous-bypass-auth'[Disable bearer-token auth on all routes]' \
+    '(--log-level)'--log-level'[Server log level]:Choices:(fatal error warn info debug trace silent)' \
+    '(--debug-endpoints)'--debug-endpoints'[Mount /api/v1/debug/* routes]' \
+    '(--web-title)'--web-title'[Custom browser tab title]:title:_default' \
+    '(--no-open)'--no-open'[Do not open the web UI in the browser]' \
+    '(--remote-control --rc)'{--remote-control,--rc}'[Expose the web UI through Kimi Remote Control]' \
+    '(--help -h)'{--help,-h}'[Show help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _kimi_web_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        rotate-token)
+          _arguments \
+            '(--help -h)'{--help,-h}'[Show help]'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_kimi_session_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "list:List sessions, most recently updated first"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_kimi_session() {
+  local state
+
+  _arguments -C \
+    '(--help -h)'{--help,-h}'[Show help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _kimi_session_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        list)
+          _arguments \
+            '(--cwd)'--cwd'[List sessions of this working directory]:Directory:_files -/' \
+            '(--all)'--all'[List sessions across every workspace]' \
+            '(--archived)'--archived'[Include archived sessions]' \
+            '(--limit)'--limit'[Print at most n sessions]:n:_default' \
+            '(--json)'--json'[Emit the session summaries as JSON]' \
+            '(--help -h)'{--help,-h}'[Show help]'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_kimi_provider_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "add:Import providers from a custom registry (api.json)"
+    "remove:Remove a provider and its model aliases"
+    "list:Show configured providers and model counts"
+    "catalog:Discover providers from the models.dev catalog"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_kimi_provider_catalog_subcommands() {
+  local -a subcmds
+  subcmds=(
+    "list:List catalog providers, or models of a provider"
+    "add:Import a catalog provider by id"
+  )
+  _describe -t subcommands 'subcommands' subcmds
+}
+
+
+_kimi_provider_catalog() {
+  local state
+
+  _arguments -C \
+    '(--help -h)'{--help,-h}'[Show help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _kimi_provider_catalog_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        list)
+          _arguments \
+            '(--filter)'--filter'[Case-insensitive id/name filter]:substring:_default' \
+            '(--url)'--url'[Override catalog URL]:url:_default' \
+            '(--json)'--json'[Emit catalog slice as JSON]' \
+            '(--help -h)'{--help,-h}'[Show help]' \
+            '1:providerId:_default'
+          ;;
+        add)
+          _arguments \
+            '(--api-key)'--api-key'[API key for the provider]:key:_default' \
+            '(--default-model)'--default-model'[Mark imported model as default_model]:modelId:_default' \
+            '(--url)'--url'[Override catalog URL]:url:_default' \
+            '(--help -h)'{--help,-h}'[Show help]' \
+            '1:providerId:_default'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_kimi_provider() {
+  local state
+
+  _arguments -C \
+    '(--help -h)'{--help,-h}'[Show help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _kimi_provider_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        add)
+          _arguments \
+            '(--api-key)'--api-key'[Registry API key (or KIMI_REGISTRY_API_KEY)]:key:_default' \
+            '(--help -h)'{--help,-h}'[Show help]' \
+            '1:url:_default'
+          ;;
+        remove)
+          _arguments \
+            '(--help -h)'{--help,-h}'[Show help]' \
+            '1:Python Completion:_list_providers'
+          ;;
+        list)
+          _arguments \
+            '(--json)'--json'[Emit raw config as JSON]' \
+            '(--help -h)'{--help,-h}'[Show help]'
+          ;;
+        catalog)
+          _kimi_provider_catalog
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_kimi() {
+  local state
+
+  _arguments -C \
+    '(--version -V)'{--version,-V}'[Output the version number]' \
+    '(--session --resume -S -r)'{--session,--resume,-S,-r}'[Resume a session (optional id; without id, pick interactively)]:Python Completion:_list_sessions' \
+    '(--continue -c)'{--continue,-c}'[Continue the previous session for this directory]' \
+    '(--yolo -y)'{--yolo,-y}'[Start in Ask When Needed mode]' \
+    '(--auto)'--auto'[Start in Never Ask mode]' \
+    '(--model -m)'{--model,-m}'[LLM model alias to use]:Python Completion:_list_models' \
+    '(--prompt -p)'{--prompt,-p}'[Run one prompt non-interactively]:prompt:_default' \
+    '(--output-format)'--output-format'[Output format for prompt mode]:Choices:(text stream-json)' \
+    '*--skills-dir[Load skills from this directory]:Directory:_files -/' \
+    '(--agent)'--agent'[Agent profile to start the new session with]:Python Completion:_list_agents' \
+    '(--agent-file)'--agent-file'[Load an agent definition from a Markdown file]:Files:_files -g "*.md"' \
+    '*--add-dir[Add an additional workspace directory]:Directory:_files -/' \
+    '(--plan)'--plan'[Start in plan mode]' \
+    '(--help -h)'{--help,-h}'[Show help]' \
+    '1: :->cmds' \
+    '*:: :->args'
+
+  case $state in
+    cmds)
+      _kimi_subcommands
+      ;;
+
+    args)
+      case $words[1] in
+        export)
+          _arguments \
+            '(--output -o)'{--output,-o}'[Output ZIP path]:Files:_files' \
+            '(--yes -y)'{--yes,-y}'[Skip previous-session confirmation]' \
+            '(--no-include-global-log)'--no-include-global-log'[Skip bundling the global diagnostic log]' \
+            '(--help -h)'{--help,-h}'[Show help]' \
+            '1:Python Completion:_list_sessions'
+          ;;
+        fork)
+          _arguments \
+            '(--cwd)'--cwd'[Working directory used to find the most recent session]:Directory:_files -/' \
+            '(--yes -y)'{--yes,-y}'[Skip previous-session confirmation]' \
+            '(--help -h)'{--help,-h}'[Show help]' \
+            '1:Python Completion:_list_sessions'
+          ;;
+        provider)
+          _kimi_provider
+          ;;
+        session)
+          _kimi_session
+          ;;
+        acp)
+          _arguments \
+            '(--login)'--login'[Run device-code login flow then exit]' \
+            '(--region)'--region'[Login region used together with --login]:Choices:(mainland-cn global)' \
+            '(--help -h)'{--help,-h}'[Show help]'
+          ;;
+        web)
+          _kimi_web
+          ;;
+        rc)
+          _arguments \
+            '(--port)'--port'[Bind port (default 58627)]:port:_default' \
+            '(--host)'--host'[Bind host (optional value)]:Choices:(127.0.0.1 0.0.0.0 localhost)' \
+            '*--allowed-host[Extra allowed Host header]:host:_default' \
+            '(--insecure-no-tls)'--insecure-no-tls'[Allow non-loopback bind without TLS proxy]' \
+            '(--allow-remote-shutdown)'--allow-remote-shutdown'[Keep remote shutdown route enabled]' \
+            '(--dangerous-bypass-auth)'--dangerous-bypass-auth'[Disable bearer-token auth on all routes]' \
+            '(--log-level)'--log-level'[Server log level]:Choices:(fatal error warn info debug trace silent)' \
+            '(--debug-endpoints)'--debug-endpoints'[Mount /api/v1/debug/* routes]' \
+            '(--web-title)'--web-title'[Custom browser tab title]:title:_default' \
+            '(--no-open)'--no-open'[Do not open the web UI in the browser]' \
+            '(--help -h)'{--help,-h}'[Show help]'
+          ;;
+        remote)
+          _arguments \
+            '(--port)'--port'[Bind port (default 58627)]:port:_default' \
+            '(--host)'--host'[Bind host (optional value)]:Choices:(127.0.0.1 0.0.0.0 localhost)' \
+            '*--allowed-host[Extra allowed Host header]:host:_default' \
+            '(--insecure-no-tls)'--insecure-no-tls'[Allow non-loopback bind without TLS proxy]' \
+            '(--allow-remote-shutdown)'--allow-remote-shutdown'[Keep remote shutdown route enabled]' \
+            '(--dangerous-bypass-auth)'--dangerous-bypass-auth'[Disable bearer-token auth on all routes]' \
+            '(--log-level)'--log-level'[Server log level]:Choices:(fatal error warn info debug trace silent)' \
+            '(--debug-endpoints)'--debug-endpoints'[Mount /api/v1/debug/* routes]' \
+            '(--web-title)'--web-title'[Custom browser tab title]:title:_default' \
+            '(--no-open)'--no-open'[Do not open the web UI in the browser]' \
+            '(--help -h)'{--help,-h}'[Show help]'
+          ;;
+        server)
+          _kimi_server
+          ;;
+        vis)
+          _arguments \
+            '(--port)'--port'[Port to bind (default: auto-pick)]:number:_default' \
+            '(--host)'--host'[Host to bind (default: 127.0.0.1)]:Choices:(127.0.0.1 0.0.0.0 localhost)' \
+            '(--no-open)'--no-open'[Do not open the browser automatically]' \
+            '(--help -h)'{--help,-h}'[Show help]' \
+            '1:Python Completion:_list_sessions'
+          ;;
+        login)
+          _arguments \
+            '(--help -h)'{--help,-h}'[Show help]'
+          ;;
+        doctor)
+          _kimi_doctor
+          ;;
+        migrate)
+          _arguments \
+            '(--help -h)'{--help,-h}'[Show help]'
+          ;;
+        upgrade)
+          _arguments \
+            '(--help -h)'{--help,-h}'[Show help]'
+          ;;
+        update)
+          _arguments \
+            '(--help -h)'{--help,-h}'[Show help]'
+          ;;
+
+      esac
+      ;;
+  esac
+}
+
+
+_kimi

@@ -28,5 +28,4 @@ compdef _pic gimp
 compdef _pic imgcat
 compdef _pic feh
 
-compdef _pip pip2
 compdef _pip pip3
