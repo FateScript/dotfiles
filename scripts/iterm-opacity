@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# iterm-opacity -- set iTerm2 session transparency (0 = fully opaque)
+#
+# Usage:
+#   iterm-opacity          # turn transparency off (opaque)
+#   iterm-opacity 30       # set transparency to 30%
+#   iterm-opacity -h       # show help
+#
+# Applies to every session in every iTerm2 window via AppleScript.
+# Note: this changes live sessions only; it does not edit saved profiles.
+
+set -e
+
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    sed -ne '2,9s/^# \{0,1\}//p' "$0"
+    exit 0
+fi
+
+pct="${1:-0}"
+if ! [[ "$pct" =~ ^[0-9]+$ ]] || (( pct < 0 || pct > 100 )); then
+    echo "Usage: iterm-opacity [0-100]  (0 = opaque, 100 = invisible)" >&2
+    exit 1
+fi
+
+transparency=$(awk "BEGIN { printf \"%.2f\", $pct / 100 }")
+
+# Note: `pgrep` is unreliable on recent macOS (fails to match running GUI
+# apps), so ask the AppleEvent system instead -- `is running` does not launch.
+if [ "$(osascript -e 'application "iTerm2" is running' 2>/dev/null)" != "true" ]; then
+    echo "iTerm2 is not running." >&2
+    exit 1
+fi
+
+osascript <<EOF
+tell application "iTerm2"
+    repeat with w in windows
+        repeat with t in tabs of w
+            repeat with s in sessions of t
+                set transparency of s to $transparency
+            end repeat
+        end repeat
+    end repeat
+end tell
+EOF
+
+if (( pct == 0 )); then
+    echo "iTerm2 transparency turned off."
+else
+    echo "iTerm2 transparency set to ${pct}%."
+fi
