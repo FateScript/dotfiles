@@ -79,6 +79,10 @@ if [ "$(window_is_fullscreen)" = "true" ]; then
         exit 1
     fi
     yabai -m window "$wid" --space "$ts"
+    # focus the window so its space becomes visible -- windows on hidden
+    # spaces disappear from the accessibility tree (seen with VSCode),
+    # which would make the re-enter step find no window at all
+    yabai -m window --focus "$wid"
     sleep 0.8
     set_fullscreen true
 else
