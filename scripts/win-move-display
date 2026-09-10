@@ -1,0 +1,88 @@
+#!/bin/bash
+# Move the focused window to the other display and follow it.
+# A macOS native-fullscreen window cannot be moved directly, so it is
+# taken out of fullscreen first and put back afterwards by setting the
+# window's AXFullScreen attribute (no reliance on keyboard focus).
+# Note: exiting fullscreen destroys the fullscreen space, which renumbers
+# the remaining spaces -- the target space is therefore resolved only
+# after the exit has completed.
+set -u
+
+info=$(yabai -m query --windows --window) || exit 1
+wid=$(echo "$info" | jq -r '.id')
+app=$(echo "$info" | jq -r '.app')
+title=$(echo "$info" | jq -r '.title')
+cur_display=$(echo "$info" | jq -r '.display')
+
+# the target is the display the window is NOT on (explicit, unlike "recent")
+target_display=$(yabai -m query --displays \
+    | jq -r --argjson cur "$cur_display" '.[] | select(.index != $cur) | .index' \
+    | head -1)
+[ -n "$target_display" ] || exit 1
+
+# yabai can only move a window into a regular desktop space, never into a
+# macOS fullscreen space -- so land on a normal space of the target display.
+target_space() {
+    yabai -m query --spaces \
+        | jq -r --argjson d "$target_display" \
+          '.[] | select(.display == $d and .["is-native-fullscreen"] == false) | .index' \
+        | head -1
+}
+
+set_fullscreen() {
+    osascript - "$app" "$title" "$1" <<'EOF'
+on run argv
+    set appName to item 1 of argv
+    set winTitle to item 2 of argv
+    set flag to (item 3 of argv is "true")
+    tell application "System Events"
+        tell process appName
+            if flag is false then
+                -- exit: target whichever window is currently fullscreen
+                repeat with w in windows
+                    try
+                        if value of attribute "AXFullScreen" of w is true then
+                            set value of attribute "AXFullScreen" of w to false
+                            return
+                        end if
+                    end try
+                end repeat
+            end if
+            -- enter (or fallback): prefer title match, else the standard window
+            if winTitle is not "" then
+                try
+                    set value of attribute "AXFullScreen" of (first window whose title is winTitle) to flag
+                    return
+                end try
+            end if
+            set value of attribute "AXFullScreen" of (first window whose subrole is "AXStandardWindow") to flag
+        end tell
+    end tell
+end run
+EOF
+}
+
+window_is_fullscreen() {
+    yabai -m query --windows \
+        | jq -r --argjson w "$wid" '.[] | select(.id == $w) | .["is-native-fullscreen"]'
+}
+
+if [ "$(window_is_fullscreen)" = "true" ]; then
+    set_fullscreen false
+    for _ in 1 2 3 4 5 6 7 8; do
+        sleep 0.5
+        [ "$(window_is_fullscreen)" = "false" ] && break
+    done
+    ts=$(target_space)
+    if [ -z "$ts" ]; then
+        set_fullscreen true
+        exit 1
+    fi
+    yabai -m window "$wid" --space "$ts"
+    sleep 0.8
+    set_fullscreen true
+else
+    ts=$(target_space)
+    [ -n "$ts" ] || exit 1
+    yabai -m window --space "$ts" && yabai -m space --focus "$ts"
+fi

@@ -1,0 +1,34 @@
+#!/bin/bash
+# Toggle macOS native fullscreen for the focused window (same as the
+# green traffic-light button). Sets the window's AXFullScreen attribute
+# directly, so it also works in apps without a ctrl+cmd+f menu shortcut.
+set -u
+
+info=$(yabai -m query --windows --window) || exit 1
+app=$(echo "$info" | jq -r '.app')
+title=$(echo "$info" | jq -r '.title')
+
+if [ "$(echo "$info" | jq -r '.["is-native-fullscreen"]')" = "true" ]; then
+    target=false
+else
+    target=true
+fi
+
+osascript - "$app" "$title" "$target" <<'EOF'
+on run argv
+    set appName to item 1 of argv
+    set winTitle to item 2 of argv
+    set flag to (item 3 of argv is "true")
+    tell application "System Events"
+        tell process appName
+            if winTitle is not "" then
+                try
+                    set value of attribute "AXFullScreen" of (first window whose title is winTitle) to flag
+                    return
+                end try
+            end if
+            set value of attribute "AXFullScreen" of (first window whose subrole is "AXStandardWindow") to flag
+        end tell
+    end tell
+end run
+EOF
