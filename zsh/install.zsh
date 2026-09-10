@@ -1,4 +1,30 @@
 
+# Detect OS distribution for package installation.
+if [ -z "$OS_DISTRIBUTION" ]; then
+    case "$(uname)" in
+        Darwin) OS_DISTRIBUTION=macos ;;
+        Linux)
+            if grep -qi ubuntu /etc/os-release 2>/dev/null; then
+                OS_DISTRIBUTION=ubuntu
+            else
+                echo "Unsupported Linux distribution, package installation will be skipped."
+            fi
+            ;;
+        *) echo "Unsupported OS: $(uname), package installation will be skipped." ;;
+    esac
+fi
+
+# Directory of this dotfiles repo, used to locate config files.
+if [ -z "$DOTFILES_DIR" ]; then
+    if [ -n "$BASH_VERSION" ]; then
+        DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    elif [ -n "$ZSH_VERSION" ]; then
+        DOTFILES_DIR="$(cd "$(dirname "${(%):-%x}")/.." && pwd)"
+    else
+        DOTFILES_DIR="$PWD"
+    fi
+fi
+
 os_install()
 {
     local package_name="$1"
@@ -13,22 +39,21 @@ os_install()
 prepare_tmux()
 {
     os_install tmux
-    cp tmux.conf "$HOME/.tmux.conf"
+    cp "$DOTFILES_DIR/tmux.conf" "$HOME/.tmux.conf"
 }
 
 prepare_zsh()
 {
     os_install zsh
     install_ohmyzsh
-    cp zshrc "$HOME/.zshrc"
+    cp "$DOTFILES_DIR/zshrc" "$HOME/.zshrc"
     mkdir -p "$HOME/.zsh"
-    cp -r zsh/. "$HOME/.zsh/"
+    cp -r "$DOTFILES_DIR/zsh/." "$HOME/.zsh/"
 
     local zsh_path
     zsh_path="$(command -v zsh)"
     if ! grep -qx "$zsh_path" /etc/shells; then
-        echo "$zsh_path is not listed in /etc/shells. Add it before running chsh."
-        return 1
+        echo "$zsh_path" | sudo tee -a /etc/shells
     fi
     sudo chsh -s "$zsh_path" "$USER"
 }
@@ -77,7 +102,12 @@ install_zsh_fzf_tab()
 
 install_ohmyzsh()
 {
-    sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    if [ -d "$HOME/.oh-my-zsh" ]; then
+        echo "oh-my-zsh already installed"
+    else
+        # --unattended: do not chsh or exec zsh; --keep-zshrc: do not touch ~/.zshrc
+        sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended --keep-zshrc
+    fi
     install_zsh_autosuggest
     install_zsh_syntax_highlight
     install_zsh_autojump
@@ -178,36 +208,44 @@ omz_complete()
 
 update_conf()
 {
-    if ! [ -f "tmux.conf" ]; then
+    if ! [ -f "$DOTFILES_DIR/tmux.conf" ]; then
         echo "update_conf should be executed under the dotfile dir."
         return
     fi
 
     # tmux and zsh
-    cp tmux.conf "$HOME/.tmux.conf"
+    cp "$DOTFILES_DIR/tmux.conf" "$HOME/.tmux.conf"
     if [ -d "$HOME/.zsh" ]; then
         echo "clean $HOME/.zsh dir (preserving Completion)"
         find "$HOME/.zsh" -mindepth 1 -maxdepth 1 ! -name Completion -exec rm -rf {} +
     fi
-    cp zshrc "$HOME/.zshrc"
+    cp "$DOTFILES_DIR/zshrc" "$HOME/.zshrc"
     mkdir -p "$HOME/.zsh" "$HOME/.zsh/Completion"
-    cp -r zsh/. "$HOME/.zsh/"
-    cp py_completions/_* "$HOME/.zsh/Completion/" 2>/dev/null
-    find py_completions -mindepth 2 -maxdepth 2 -type f -name "_*" -exec cp {} "$HOME/.zsh/Completion/" \;
+    cp -r "$DOTFILES_DIR/zsh/." "$HOME/.zsh/"
+    cp "$DOTFILES_DIR"/py_completions/_* "$HOME/.zsh/Completion/" 2>/dev/null
+    find "$DOTFILES_DIR/py_completions" -mindepth 2 -maxdepth 2 -type f -name "_*" -exec cp {} "$HOME/.zsh/Completion/" \;
 
     if ! [ -f "$HOME/.zsh.local" ]; then
         echo "update zsh.local, for local usage"
-        cp zsh.local "$HOME/.zsh.local"
+        cp "$DOTFILES_DIR/zsh.local" "$HOME/.zsh.local"
     fi
     echo "update configure of zsh & tmux done"
 
     # python startup
     echo "update $HOME/.python_startup.py, for python startup"
-    cp python/startup.py "$HOME/.python_startup.py"
+    cp "$DOTFILES_DIR/python/startup.py" "$HOME/.python_startup.py"
 
     # local scripts
     bin_dir="$HOME/.local/bin"
     mkdir -p "$bin_dir"
-    cp scripts/* "$bin_dir/"
+    cp "$DOTFILES_DIR"/scripts/* "$bin_dir/"
     echo "update scripts in $bin_dir"
+
+    # yabai / skhd (macOS only)
+    if [ "$OS_DISTRIBUTION" = "macos" ]; then
+        cp "$DOTFILES_DIR/yabairc" "$HOME/.yabairc"
+        cp "$DOTFILES_DIR/skhdrc" "$HOME/.skhdrc"
+        chmod +x "$HOME/.yabairc"
+        echo "update configure of yabai & skhd done"
+    fi
 }

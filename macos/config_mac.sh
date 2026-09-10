@@ -22,3 +22,7 @@ defaults write NSGlobalDomain NSProviderIdentifier -string "com.google.Chrome"
 # Mouse
 echo "Mouse: Scroll direction set to unnatural"
 defaults write -g com.apple.swipescrolldirection -bool false
+
+# remap Caps Lock to Option on the built-in keyboard (takes effect after re-login)
+echo "Remap: Caps Lock to Ooption"
+python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/remap_keys.py"

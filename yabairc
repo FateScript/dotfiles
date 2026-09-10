@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# yabai configuration: https://github.com/koekeishiya/yabai
+#
+# Note: automatic tiling (`layout bsp`) and space-related features require
+# the scripting addition, which needs SIP partially disabled.
+# Without it, yabai still supports focus/move/resize via skhd.
+# See: https://github.com/koekeishiya/yabai/wiki/Disabling-System-Integrity-Protection
+
+# layout: bsp = automatic tiling, float = plain floating, stack = one window visible
+yabai -m config layout bsp
+
+# window appearance
+yabai -m config window_gap               8
+yabai -m config top_padding              8
+yabai -m config bottom_padding           8
+yabai -m config left_padding             8
+yabai -m config right_padding            8
+
+# mouse behavior: off / autoraise / autofocus
+yabai -m config focus_follows_mouse      off
+yabai -m config mouse_follows_focus      off
+
+# new windows become the second split child (right/bottom)
+yabai -m config window_placement second_child
+
+# apps that should never be tiled
+yabai -m rule --add app="^(系统设置|System Settings|System Preferences)$" manage=off
+yabai -m rule --add app="^计算器$" manage=off
+yabai -m rule --add app="^IINA$" manage=off
