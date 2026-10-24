@@ -1,0 +1,486 @@
+#!/usr/bin/env python3
+"""Continue a Codex thread after its ChatGPT rate-limit window resets.
+
+This uses the local Codex app-server over stdio.  It intentionally does not
+use Codex's private SQLite files: thread/list and account/rateLimits/read are
+the app-server interfaces intended for clients.
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import hashlib
+import json
+import os
+import socket
+import struct
+import subprocess
+import sys
+import time
+from glob import glob
+from dataclasses import dataclass
+from typing import Any
+
+
+class CodexError(RuntimeError):
+    pass
+
+
+class RpcClient:
+    """Small JSON-RPC client for either stdio or the daemon's Unix WebSocket."""
+
+    def __init__(self, command: list[str]) -> None:
+        self.process = None
+        self.socket = None
+        codex_home = os.path.expanduser(os.environ.get("CODEX_HOME", "~/.codex"))
+        socket_path = os.path.join(codex_home, "app-server-control", "app-server-control.sock")
+        if os.path.exists(socket_path):
+            try:
+                self._connect_websocket(socket_path)
+            except (OSError, TimeoutError, CodexError):
+                self.socket = None
+        if self.socket is None:
+            self.process = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+            )
+        self.next_id = 1
+
+    def close(self) -> None:
+        if self.socket is not None:
+            try:
+                self.socket.close()
+            finally:
+                self.socket = None
+            return
+        if self.process is not None and self.process.poll() is None:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+
+    def request(self, method: str, params: dict[str, Any] | None = None) -> Any:
+        request_id = self.next_id
+        self.next_id += 1
+        payload: dict[str, Any] = {"method": method, "id": request_id}
+        if params is not None:
+            payload["params"] = params
+        if self.socket is not None:
+            self._send_frame(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+            while True:
+                message = self._read_message()
+                if message is None or message.get("id") != request_id:
+                    continue
+                return self._result_or_error(message, method)
+
+        if self.process is None or self.process.stdin is None or self.process.stdout is None:
+            raise CodexError("无法连接到 Codex app-server")
+        try:
+            self.process.stdin.write(json.dumps(payload, ensure_ascii=False) + "\n")
+            self.process.stdin.flush()
+        except BrokenPipeError as exc:
+            raise CodexError(self._stderr()) from exc
+
+        for line in self.process.stdout:
+            if not line.strip():
+                continue
+            try:
+                message = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if message.get("id") != request_id:
+                continue
+            return self._result_or_error(message, method)
+        raise CodexError(self._stderr() or f"Codex app-server 未返回 {method} 的结果")
+
+    def notify(self, method: str, params: dict[str, Any] | None = None) -> None:
+        payload: dict[str, Any] = {"method": method}
+        if params is not None:
+            payload["params"] = params
+        if self.socket is not None:
+            self._send_frame(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+            return
+        if self.process is None or self.process.stdin is None:
+            raise CodexError("无法连接到 Codex app-server")
+        self.process.stdin.write(json.dumps(payload, ensure_ascii=False) + "\n")
+        self.process.stdin.flush()
+
+    def _connect_websocket(self, path: str) -> None:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.settimeout(10)
+        sock.connect(path)
+        key = base64.b64encode(os.urandom(16)).decode("ascii")
+        request = (
+            "GET / HTTP/1.1\r\n"
+            "Host: localhost\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            f"Sec-WebSocket-Key: {key}\r\n"
+            "Sec-WebSocket-Version: 13\r\n\r\n"
+        )
+        sock.sendall(request.encode("ascii"))
+        response = b""
+        while b"\r\n\r\n" not in response:
+            chunk = sock.recv(4096)
+            if not chunk:
+                raise CodexError("app-server Unix socket 在 WebSocket 握手时关闭了连接")
+            response += chunk
+        if not response.startswith(b"HTTP/1.1 101"):
+            raise CodexError("app-server Unix socket 未接受 WebSocket 握手")
+        expected = base64.b64encode(
+            hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode("ascii")).digest()
+        )
+        if expected not in response:
+            raise CodexError("app-server WebSocket 握手校验失败")
+        self.socket = sock
+
+    def _send_frame(self, text: str) -> None:
+        if self.socket is None:
+            raise CodexError("WebSocket 未连接")
+        payload = text.encode("utf-8")
+        length = len(payload)
+        header = bytearray([0x81])
+        if length < 126:
+            header.append(0x80 | length)
+        elif length < 65536:
+            header.append(0x80 | 126)
+            header.extend(struct.pack(">H", length))
+        else:
+            header.append(0x80 | 127)
+            header.extend(struct.pack(">Q", length))
+        mask = os.urandom(4)
+        header.extend(mask)
+        header.extend(byte ^ mask[index % 4] for index, byte in enumerate(payload))
+        self.socket.sendall(header)
+
+    def _read_message(self) -> dict[str, Any] | None:
+        if self.socket is None:
+            return None
+        while True:
+            first, second = self._read_exact(2)
+            opcode = first & 0x0F
+            length = second & 0x7F
+            if length == 126:
+                length = struct.unpack(">H", self._read_exact(2))[0]
+            elif length == 127:
+                length = struct.unpack(">Q", self._read_exact(8))[0]
+            mask = self._read_exact(4) if second & 0x80 else None
+            payload = bytearray(self._read_exact(length))
+            if mask:
+                for index in range(length):
+                    payload[index] ^= mask[index % 4]
+            if opcode == 0x9:  # ping
+                self._send_control_frame(0xA, bytes(payload))
+                continue
+            if opcode in (0x8, 0xA):
+                continue
+            if opcode not in (0x1, 0x2):
+                continue
+            try:
+                message = json.loads(payload.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                continue
+            return message if isinstance(message, dict) else None
+
+    def _read_exact(self, length: int) -> bytes:
+        if self.socket is None:
+            raise CodexError("WebSocket 未连接")
+        chunks = bytearray()
+        while len(chunks) < length:
+            chunk = self.socket.recv(length - len(chunks))
+            if not chunk:
+                raise CodexError("app-server WebSocket 连接已关闭")
+            chunks.extend(chunk)
+        return bytes(chunks)
+
+    def _send_control_frame(self, opcode: int, payload: bytes) -> None:
+        if self.socket is None:
+            return
+        mask = os.urandom(4)
+        masked = bytes(byte ^ mask[index % 4] for index, byte in enumerate(payload))
+        self.socket.sendall(bytes([0x80 | opcode, 0x80 | len(payload)]) + mask + masked)
+
+    @staticmethod
+    def _result_or_error(message: dict[str, Any], method: str) -> Any:
+        if "error" in message:
+            error = message["error"]
+            raise CodexError(error.get("message", str(error)))
+        return message.get("result")
+
+    def _stderr(self) -> str:
+        if self.process is None or self.process.stderr is None:
+            return ""
+        # stderr is deliberately read only after the server exits or the pipe
+        # breaks; reading it during a live request would block.
+        if self.process.poll() is None:
+            return ""
+        return self.process.stderr.read().strip()
+
+
+@dataclass
+class RateLimit:
+    used_percent: int
+    resets_at: int | None
+    reached_type: str | None
+    limit_id: str | None
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="在 Codex 限额窗口重置后，向指定对话发送“继续”。"
+    )
+    parser.add_argument(
+        "--thread-id",
+        help="目标 thread ID。省略时选择当前目录下最近更新的未归档会话。",
+    )
+    parser.add_argument(
+        "--cwd",
+        default=os.getcwd(),
+        help="自动选择会话时使用的工作目录（默认：当前目录）。",
+    )
+    parser.add_argument(
+        "--codex-home",
+        help="Codex 数据目录；多账号时可指定，例如 ~/.codex-account-2。",
+    )
+    parser.add_argument("--message", default="继续", help="要发送的消息（默认：继续）。")
+    parser.add_argument(
+        "--grace-seconds",
+        type=int,
+        default=5,
+        help="重置时间后额外等待几秒再发送（默认：5）。",
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=3,
+        help="额度重置后仍失败时最多重新读取并等待几次（默认：3）。",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="只读取 thread 和限额信息，不等待，也不发送消息。",
+    )
+    parser.add_argument(
+        "--send-now",
+        action="store_true",
+        help="即使当前没有检测到限额，也立即发送消息。",
+    )
+    parser.add_argument(
+        "--app-server-command",
+        nargs="+",
+        default=["codex", "app-server"],
+        help="启动 app-server 的命令（默认：codex app-server）。",
+    )
+    return parser.parse_args()
+
+
+def resolve_codex_home(explicit: str | None) -> str:
+    if explicit:
+        return os.path.abspath(os.path.expanduser(explicit))
+    if os.environ.get("CODEX_HOME"):
+        return os.path.abspath(os.path.expanduser(os.environ["CODEX_HOME"]))
+
+    default = os.path.expanduser("~/.codex")
+    candidates = [default] + sorted(glob(os.path.expanduser("~/.codex-*/auth.json")))
+    authenticated: list[str] = []
+    for auth_path in candidates:
+        home = os.path.dirname(auth_path) if auth_path != default else default
+        if auth_path == default:
+            auth_path = os.path.join(default, "auth.json")
+        try:
+            with open(auth_path, encoding="utf-8") as stream:
+                auth = json.load(stream)
+            if auth.get("tokens", {}).get("access_token"):
+                authenticated.append(home)
+        except (OSError, json.JSONDecodeError, AttributeError):
+            continue
+    if len(authenticated) > 1:
+        raise CodexError(
+            "发现多个已登录 Codex 数据目录，请用 --codex-home 明确指定：\n"
+            + "\n".join(f"  {home}" for home in authenticated)
+        )
+    if authenticated:
+        return authenticated[0]
+    return default
+
+
+def initialize(client: RpcClient) -> None:
+    client.request(
+        "initialize",
+        {
+            "clientInfo": {
+                "name": "codex-auto-continue",
+                "title": "Codex Auto Continue",
+                "version": "0.1.0",
+            },
+            "capabilities": {"experimentalApi": True},
+        },
+    )
+    client.notify("initialized", {})
+
+
+def choose_thread(client: RpcClient, args: argparse.Namespace) -> dict[str, Any]:
+    if args.thread_id:
+        result = client.request("thread/read", {"threadId": args.thread_id})
+        return result["thread"]
+
+    result = client.request(
+        "thread/list",
+        {
+            "cwd": os.path.abspath(args.cwd),
+            "archived": False,
+            "limit": 20,
+            "sortKey": "updated_at",
+            "sortDirection": "desc",
+            "useStateDbOnly": True,
+        },
+    )
+    threads = result.get("data", [])
+    if not threads:
+        raise CodexError(f"没有找到工作目录为 {os.path.abspath(args.cwd)} 的未归档会话")
+    return threads[0]
+
+
+def _window(value: Any, limit_id: str | None, reached_type: str | None) -> RateLimit | None:
+    if not isinstance(value, dict):
+        return None
+    used = value.get("usedPercent")
+    if not isinstance(used, int):
+        return None
+    resets_at = value.get("resetsAt")
+    if not isinstance(resets_at, int):
+        resets_at = None
+    return RateLimit(used, resets_at, reached_type, limit_id)
+
+
+def read_limits(client: RpcClient) -> list[RateLimit]:
+    result = client.request(
+        "account/rateLimits/read",
+        {"excludeResetCreditDetails": True},
+    )
+    limits: list[RateLimit] = []
+    ordinary_usage_blocked = result.get("ordinaryUsageAllowed") is False
+    buckets = result.get("rateLimitsByLimitId") or {}
+    if not buckets and isinstance(result.get("rateLimits"), dict):
+        buckets = {result["rateLimits"].get("limitId") or "default": result["rateLimits"]}
+    for limit_id, bucket in buckets.items():
+        if not isinstance(bucket, dict):
+            continue
+        reached_type = bucket.get("rateLimitReachedType")
+        if reached_type is None and ordinary_usage_blocked:
+            reached_type = "ordinary_usage_blocked"
+        for key in ("primary", "secondary"):
+            parsed = _window(bucket.get(key), limit_id, reached_type)
+            if parsed:
+                limits.append(parsed)
+    if not limits:
+        raise CodexError("Codex 没有返回可用的限额窗口信息")
+    return limits
+
+
+def blocked_reset(limits: list[RateLimit]) -> int | None:
+    # Prefer windows that explicitly show 100%. A bucket-level reached type
+    # does not tell us whether primary or secondary caused the block; only fall
+    # back to all reached-type windows when no percentage identifies it.
+    blocked = [
+        item.resets_at
+        for item in limits
+        if item.resets_at is not None
+        and item.used_percent >= 100
+    ]
+    if not blocked:
+        blocked = [
+            item.resets_at
+            for item in limits
+            if item.resets_at is not None and item.reached_type is not None
+        ]
+    return max(blocked) if blocked else None
+
+
+def print_summary(thread: dict[str, Any], limits: list[RateLimit]) -> None:
+    print(f"thread_id: {thread.get('id') or thread.get('sessionId')}")
+    print(f"title: {thread.get('name') or thread.get('preview') or '(无标题)'}")
+    print(f"cwd: {thread.get('cwd')}")
+    for item in limits:
+        reset = time.strftime("%Y-%m-%d %H:%M:%S %z", time.localtime(item.resets_at)) if item.resets_at else "未知"
+        print(
+            f"limit={item.limit_id or 'default'} used={item.used_percent}% "
+            f"reset={reset} reached={item.reached_type or 'no'}"
+        )
+
+
+def send_continue(thread_id: str, message: str) -> None:
+    """Queue the message through the official CLI command.
+
+    Using ``codex queue`` here lets the normal Codex daemon own the turn. This
+    is important when the rate-limit reader had to start a temporary stdio
+    app-server as a fallback: closing that reader must not cancel the turn.
+    """
+    completed = subprocess.run(
+        ["codex", "queue", "--thread", thread_id, "--message", message],
+        env=os.environ.copy(),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout).strip()
+        raise CodexError(detail or f"codex queue 退出码 {completed.returncode}")
+
+
+def main() -> int:
+    args = parse_args()
+    if args.max_retries < 0 or args.grace_seconds < 0:
+        raise SystemExit("--max-retries 和 --grace-seconds 不能为负数")
+
+    os.environ["CODEX_HOME"] = resolve_codex_home(args.codex_home)
+    client = RpcClient(args.app_server_command)
+    try:
+        initialize(client)
+        thread = choose_thread(client, args)
+        thread_id = thread.get("id") or thread.get("sessionId")
+        if not thread_id:
+            raise CodexError("目标会话没有 thread ID")
+
+        limits = read_limits(client)
+        print_summary(thread, limits)
+        reset_at = blocked_reset(limits)
+        if args.dry_run:
+            print("dry-run: 不等待，不发送消息")
+            return 0
+        if reset_at is None and not args.send_now:
+            print("当前没有检测到已触发的限额，不发送消息。若要立即发送，请加 --send-now。")
+            return 0
+
+        for attempt in range(args.max_retries + 1):
+            if reset_at is not None:
+                wait_seconds = max(0, reset_at - int(time.time()) + args.grace_seconds)
+                if wait_seconds:
+                    print(f"等待 {wait_seconds} 秒后发送“{args.message}”…", flush=True)
+                    time.sleep(wait_seconds)
+            try:
+                send_continue(thread_id, args.message)
+                print(f"已向 {thread_id} 发送“{args.message}”")
+                return 0
+            except CodexError as exc:
+                if attempt >= args.max_retries:
+                    raise CodexError(f"发送失败，已达到最大重试次数：{exc}") from exc
+                print(f"发送仍被拒绝，重新读取限额并等待：{exc}", file=sys.stderr)
+                reset_at = blocked_reset(read_limits(client))
+        return 1
+    finally:
+        client.close()
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except CodexError as exc:
+        print(f"codex-auto-continue: {exc}", file=sys.stderr)
+        raise SystemExit(2)

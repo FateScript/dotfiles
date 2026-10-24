@@ -7,8 +7,14 @@ git clone https://github.com/FateScript/dotfiles.git
 cd dotfiles
 ```
 
-Step2: Install
-you can use the following command to install all the configuration files:
+Step2: Install (one-click)
+This installs zsh/tmux/tools, oh-my-zsh with plugins, deploys all the
+configuration files, and sets zsh as your default shell:
+```shell
+./install.sh
+```
+
+Alternatively, you can source the install script and call the functions you need:
 ```shell
 source zsh/install.zsh
 install_all
