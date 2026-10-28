@@ -180,6 +180,7 @@ install_tools()
     os_install axel
     os_install ripgrep
     os_install ncdu
+    os_install mdcat
 
     pip install imgcat
     pip install nvitop

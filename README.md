@@ -62,6 +62,7 @@ prepare_tmux
 
 * [ranger](https://github.com/ranger/ranger)
 * [ripgrep](https://github.com/BurntSushi/ripgrep)
+* [mdcat](https://github.com/BIRSAx2/mdcat) for rendering Markdown in the terminal
 * [fzf](https://github.com/junegunn/fzf)
 * [timg](https://github.com/hzeller/timg) or [imgcat](https://github.com/wookayin/python-imgcat)
 

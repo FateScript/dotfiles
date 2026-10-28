@@ -6,7 +6,7 @@ export PATH="/opt/homebrew/bin:$PATH"
 
 brew install coreutils gnu-tar gnu-find
 brew install reattach-to-user-namespace tmux
-brew install wget curl cmake htop axel
+brew install wget curl cmake htop axel mdcat
 brew install node rust go
 
 # tiling window manager + hotkey daemon
