@@ -20,4 +20,4 @@ skhd --start-service || true
 brew install --cask iterm2 visual-studio-code \
     google-chrome clipy stats \
     iina anki notion eudic \
-    netnewswire alt-tab
+    alt-tab
