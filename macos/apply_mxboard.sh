@@ -17,7 +17,17 @@ defaults -currentHost write -g com.apple.keyboard.modifiermapping.1130-180-0 -ar
     '{ HIDKeyboardModifierMappingSrc = 30064771302; HIDKeyboardModifierMappingDst = 30064771303; }' \
     '{ HIDKeyboardModifierMappingSrc = 30064771303; HIDKeyboardModifierMappingDst = 30064771302; }'
 
+# Apply to the connected MX Board immediately; ByHost preferences above
+# retain the mapping for future logins. Do not remap other keyboards.
+hidutil property --matching '{"VendorID":1130,"ProductID":180}' --set '{"UserKeyMapping":[
+    {"HIDKeyboardModifierMappingSrc":30064771129,"HIDKeyboardModifierMappingDst":30064771298},
+    {"HIDKeyboardModifierMappingSrc":30064771298,"HIDKeyboardModifierMappingDst":30064771299},
+    {"HIDKeyboardModifierMappingSrc":30064771299,"HIDKeyboardModifierMappingDst":30064771129},
+    {"HIDKeyboardModifierMappingSrc":30064771302,"HIDKeyboardModifierMappingDst":30064771303},
+    {"HIDKeyboardModifierMappingSrc":30064771303,"HIDKeyboardModifierMappingDst":30064771302}
+]}'
+
 echo "MX Board mapping saved:"
 echo "  Caps Lock -> left Option; left Alt -> left Command; left Win -> Caps Lock"
 echo "  right Alt -> right Command; right Win -> right Option"
-echo "Log out and back in (or restart) for the mapping to take effect."
+echo "Applied to connected MX Board devices and saved for future logins."

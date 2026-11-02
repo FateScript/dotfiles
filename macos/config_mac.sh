@@ -9,6 +9,7 @@ defaults write com.microsoft.VSCode ApplePressAndHoldEnabled -bool false
 # iterm2
 echo "iTerm2: Don’t display the annoying prompt when quitting iTerm"
 defaults write com.googlecode.iterm2 PromptOnQuit -bool false
+python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config_iterm.py"
 
 # TextEdit
 echo "TextEdit: Set tab width to 4 instead of the default 8"
