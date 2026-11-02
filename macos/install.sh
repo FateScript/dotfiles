@@ -19,5 +19,5 @@ skhd --start-service || true
 # cask app
 brew install --cask iterm2 visual-studio-code \
     google-chrome clipy stats \
-    iina anki notion eudic \
+    iina notion eudic \
     alt-tab
