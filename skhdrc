@@ -27,8 +27,8 @@ shift + alt - 4 : yabai -m window --space 4; yabai -m space --focus 4
 # toggle macOS native fullscreen (same as the green traffic-light button)
 alt - f : $HOME/.local/bin/win-toggle-fullscreen
 
-# launch iTerm2, or switch to it if already running
-alt - t : open -a /Applications/iTerm.app
+# activate iTerm2 without requesting a new window
+alt - t : osascript -e 'tell application "iTerm2" to activate'
 
 # if VSCode is focused open a new window, otherwise just launch/switch to it
 alt - v [
@@ -36,11 +36,8 @@ alt - v [
   * : open -a "Visual Studio Code"
 ]
 
-# if Chrome is focused open a new window, otherwise just launch/switch to it
-alt - c [
-  "Google Chrome" : open -na "Google Chrome" --args --new-window
-  * : open -a "Google Chrome"
-]
+# activate Chrome without requesting a new window
+alt - c : osascript -e 'tell application "Google Chrome" to activate'
 
 # toggle fullscreen / zoom window to full split area
 alt - m : yabai -m window --toggle zoom-fullscreen
