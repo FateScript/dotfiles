@@ -2,6 +2,11 @@
 import Foundation
 import IOKit.hid
 
+guard CommandLine.arguments.count == 2,
+      FileManager.default.isReadableFile(atPath: CommandLine.arguments[1]) else {
+    fputs("Usage: watch_mxboard /path/to/apply_mxboard.sh (readable script required)\n", stderr)
+    exit(1)
+}
 let scriptPath = CommandLine.arguments[1]
 let applyQueue = DispatchQueue(label: "local.dotfiles.mxboard.apply")
 
@@ -13,6 +18,9 @@ func applyMapping() {
     do {
         try process.run()
         process.waitUntilExit()
+        if process.terminationStatus != 0 {
+            fputs("MX Board mapping script exited with status \(process.terminationStatus)\n", stderr)
+        }
     } catch {
         fputs("MX Board mapping failed: \(error)\n", stderr)
     }

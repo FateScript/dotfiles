@@ -12,7 +12,7 @@ support_dir="$HOME/Library/Application Support/dotfiles/mxboard"
 agent_path="$HOME/Library/LaunchAgents/local.dotfiles.mxboard.plist"
 agent_target="gui/$(id -u)/local.dotfiles.mxboard"
 
-mkdir -p "$support_dir" "$(dirname "$agent_path")"
+mkdir -p "$support_dir" "$(dirname "$agent_path")" "$HOME/Library/Logs/dotfiles"
 # Keep working even if the repository is moved or removed.
 install -m 755 "$source_dir/apply_mxboard.sh" "$support_dir/apply_mxboard.sh"
 watcher_tmp="$(mktemp "$support_dir/watcher.XXXXXX")"
@@ -32,15 +32,18 @@ cat > "$agent_tmp" <<'PLIST'
 <dict>
     <key>Label</key><string>local.dotfiles.mxboard</string>
     <key>ProgramArguments</key>
-    <array><string>WATCHER</string><string>SCRIPT</string></array>
+    <array/>
     <key>RunAtLoad</key><true/>
     <key>KeepAlive</key><true/>
     <key>ThrottleInterval</key><integer>5</integer>
 </dict>
 </plist>
 PLIST
-plutil -replace ProgramArguments.1 -string "$support_dir/apply_mxboard.sh" "$agent_tmp"
-plutil -replace ProgramArguments.0 -string "$support_dir/watch_mxboard" "$agent_tmp"
+# Build an empty array explicitly: some plutil versions insert at array indexes
+# even with -replace, leaving placeholder strings in the argument list.
+plutil -insert ProgramArguments.0 -string "$support_dir/watch_mxboard" "$agent_tmp"
+plutil -insert ProgramArguments.1 -string "$support_dir/apply_mxboard.sh" "$agent_tmp"
+plutil -insert StandardErrorPath -string "$HOME/Library/Logs/dotfiles/mxboard.log" "$agent_tmp"
 plutil -lint "$agent_tmp"
 install -m 644 "$agent_tmp" "$agent_path"
 
